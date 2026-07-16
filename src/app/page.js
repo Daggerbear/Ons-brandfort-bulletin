@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
+import Link from "next/link";
 
 export default function Home() {
   const [lang, setLang] = useState("af");
@@ -140,21 +141,33 @@ export default function Home() {
 
         <div className="space-y-4">
           {filteredBusinesses.map((business) => (
-            <div
+            <Link
               key={business.id}
-              className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
+              href={`/business/${business.id}`}
+              className="flex gap-4 bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-orange-500 transition"
             >
-              <h3 className="text-lg font-semibold text-orange-400">
-                {business.name}
-              </h3>
-              <p className="text-sm text-neutral-400 mt-1">
-                {business.category}
-              </p>
-              <p className="text-neutral-300 mt-2">{business.description}</p>
-              <p className="text-sm text-neutral-400 mt-2">
-                📞 {business.contact}
-              </p>
-            </div>
+              {business.logo_url ? (
+                <img
+                  src={business.logo_url}
+                  alt={`${business.name} logo`}
+                  className="w-14 h-14 object-cover rounded-lg border border-neutral-800 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
+              )}
+              <div>
+                <h3 className="text-lg font-semibold text-orange-400">
+                  {business.name}
+                </h3>
+                <p className="text-sm text-neutral-400 mt-1">
+                  {business.category}
+                </p>
+                <p className="text-neutral-300 mt-2">{business.description}</p>
+                <p className="text-sm text-neutral-400 mt-2">
+                  📞 {business.contact}
+                </p>
+              </div>
+            </Link>
           ))}
         </div>
       </section>
