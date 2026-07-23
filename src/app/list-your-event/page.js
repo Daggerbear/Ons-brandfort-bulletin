@@ -6,6 +6,8 @@ import Nav from "@/components/Nav";
 export default function ListEvent() {
   const [lang, setLang] = useState("af");
   const [submitted, setSubmitted] = useState(false);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     title: "",
     date: "",
@@ -25,7 +27,9 @@ export default function ListEvent() {
       location: "Plek",
       description: "Beskrywing",
       submittedBy: "Jou Naam",
+      photo: "Foto (opsioneel)",
       submit: "Dien In",
+      submitting: "Stuur...",
       thanks: "Dankie! Jou gebeurtenis wag nou vir goedkeuring.",
       back: "Terug na Tuisblad",
     },
@@ -38,7 +42,9 @@ export default function ListEvent() {
       location: "Location",
       description: "Description",
       submittedBy: "Your Name",
+      photo: "Photo (optional)",
       submit: "Submit",
+      submitting: "Sending...",
       thanks: "Thanks! Your event is now pending approval.",
       back: "Back to Homepage",
     },
@@ -52,6 +58,27 @@ export default function ListEvent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    let image_url = null;
+
+    if (file) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("events-photos")
+        .upload(fileName, file);
+
+      if (uploadError) {
+        alert("Foto oplaai het gefaal: " + uploadError.message);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from("events-photos")
+          .getPublicUrl(fileName);
+        image_url = urlData.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("events").insert([
       {
         title: form.title,
@@ -60,8 +87,12 @@ export default function ListEvent() {
         location: form.location,
         description: form.description,
         submittedBy: form.submittedBy,
+        image_url,
       },
     ]);
+
+    setLoading(false);
+
     if (error) {
       console.log("Error:", error);
       alert("Something went wrong, try again.");
@@ -88,9 +119,7 @@ export default function ListEvent() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.title}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.title}</label>
                 <input
                   type="text"
                   name="title"
@@ -102,9 +131,7 @@ export default function ListEvent() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.date}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.date}</label>
                 <input
                   type="date"
                   name="date"
@@ -116,9 +143,7 @@ export default function ListEvent() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.time}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.time}</label>
                 <input
                   type="time"
                   name="time"
@@ -130,9 +155,7 @@ export default function ListEvent() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.location}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.location}</label>
                 <input
                   type="text"
                   name="location"
@@ -144,9 +167,7 @@ export default function ListEvent() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.description}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.description}</label>
                 <textarea
                   name="description"
                   value={form.description}
@@ -158,9 +179,7 @@ export default function ListEvent() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-400 mb-1">
-                  {t.submittedBy}
-                </label>
+                <label className="block text-sm text-neutral-400 mb-1">{t.submittedBy}</label>
                 <input
                   type="text"
                   name="submittedBy"
@@ -171,11 +190,22 @@ export default function ListEvent() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm text-neutral-400 mb-1">{t.photo}</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="w-full text-sm text-neutral-400"
+                />
+              </div>
+
               <button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold rounded-lg px-4 py-3 mt-2"
               >
-                {t.submit}
+                {loading ? t.submitting : t.submit}
               </button>
             </form>
           </>
