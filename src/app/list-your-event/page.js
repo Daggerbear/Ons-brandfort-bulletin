@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
+import Link from "next/link";
 
 export default function ListEvent() {
   const [lang, setLang] = useState("af");
@@ -28,10 +30,13 @@ export default function ListEvent() {
       description: "Beskrywing",
       submittedBy: "Jou Naam",
       photo: "Foto (opsioneel)",
+      choosePhoto: "Kies foto",
       submit: "Dien In",
       submitting: "Stuur...",
       thanks: "Dankie! Jou gebeurtenis wag nou vir goedkeuring.",
       back: "Terug na Tuisblad",
+      agree: "Deur in te dien, stem jy in tot ons",
+      terms: "Bepalings & Voorwaardes",
     },
     en: {
       heading: "List Your Event",
@@ -43,10 +48,13 @@ export default function ListEvent() {
       description: "Description",
       submittedBy: "Your Name",
       photo: "Photo (optional)",
+      choosePhoto: "Choose photo",
       submit: "Submit",
       submitting: "Sending...",
       thanks: "Thanks! Your event is now pending approval.",
       back: "Back to Homepage",
+      agree: "By submitting, you agree to our",
+      terms: "Terms & Conditions",
     },
   };
 
@@ -102,9 +110,9 @@ export default function ListEvent() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
+    <main className="min-h-screen bg-neutral-950 text-white px-6 py-10 flex flex-col">
       <Nav lang={lang} />
-      <div className="max-w-md mx-auto mt-8">
+      <div className="max-w-md mx-auto mt-8 flex-1 w-full">
         <button
           onClick={() => setLang(lang === "af" ? "en" : "af")}
           className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition mb-8"
@@ -192,12 +200,15 @@ export default function ListEvent() {
 
               <div>
                 <label className="block text-sm text-neutral-400 mb-1">{t.photo}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFile(e.target.files[0])}
-                  className="w-full text-sm text-neutral-400"
-                />
+                <label className="flex items-center justify-center gap-2 w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white cursor-pointer focus:border-orange-500">
+                  📷 {file ? file.name : t.choosePhoto}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFile(e.target.files[0])}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               <button
@@ -207,6 +218,14 @@ export default function ListEvent() {
               >
                 {loading ? t.submitting : t.submit}
               </button>
+
+              <p className="text-xs text-neutral-500 text-center">
+                {t.agree}{" "}
+                <Link href="/terms" className="underline hover:text-orange-400">
+                  {t.terms}
+                </Link>
+                .
+              </p>
             </form>
           </>
         ) : (
@@ -218,6 +237,8 @@ export default function ListEvent() {
           </div>
         )}
       </div>
+
+      <Footer lang={lang} />
     </main>
   );
 }

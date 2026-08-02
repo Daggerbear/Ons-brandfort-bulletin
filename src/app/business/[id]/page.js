@@ -44,14 +44,20 @@ export default function BusinessDetail() {
 
   const t = text[lang];
 
-  const getWhatsappLink = (contact) => {
+  const getWhatsappLink = (contact, businessName) => {
     if (!contact) return null;
     const match = contact.match(/0\d[\d\s]{7,}/);
     if (!match) return null;
     let digits = match[0].replace(/\D/g, "");
     if (digits.length < 9) return null;
     digits = "27" + digits.slice(1);
-    return `https://wa.me/${digits}`;
+
+    const message =
+      lang === "af"
+        ? `Hi, ek het jou op Ons Brandfort Bulletin gekry! Ek wil navrae doen oor `
+        : `Hi, I found you on Ons Brandfort Bulletin! I'd like to enquire about `;
+
+    return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
   };
 
   if (loading) {
@@ -77,7 +83,7 @@ export default function BusinessDetail() {
     );
   }
 
-  const whatsappLink = getWhatsappLink(business.contact);
+  const whatsappLink = getWhatsappLink(business.contact, business.name);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">

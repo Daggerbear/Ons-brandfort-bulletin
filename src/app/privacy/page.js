@@ -1,0 +1,172 @@
+"use client";
+import { useState } from "react";
+import Nav from "@/components/Nav";
+
+export default function Privacy() {
+  const [lang, setLang] = useState("af");
+
+  const text = {
+    af: {
+      title: "Privaatheidsbeleid",
+      updated: "Laas opgedateer: Augustus 2026",
+      sections: [
+        {
+          h: "1. Wie Ons Is",
+          p: [
+            "Ons Brandfort Bulletin word bedryf deur Jaco du Plessis, as 'n eenmansaak in Brandfort, Vrystaat. Ons is verantwoordelik vir enige persoonlike inligting wat via hierdie webwerf versamel word, in ooreenstemming met die Suid-Afrikaanse Wet op Beskerming van Persoonlike Inligting (POPIA).",
+          ],
+        },
+        {
+          h: "2. Watter Inligting Ons Versamel",
+          p: [
+            "Wanneer jy die webwerf gebruik, kan ons die volgende versamel:",
+            "• Jou naam (wanneer jy 'n plasing, kommentaar, besigheidslysing, of gebeurtenis indien)",
+            "• Kontakbesonderhede soos foonnommer of e-pos (vir besigheidslysings)",
+            "• Foto's wat jy oplaai (bv. verlore/gevind items, gebeurtenisfoto's, besigheidsfoto's)",
+            "• Inhoud van jou plasings en kommentare",
+            "Ons versamel NIE wagwoorde, betalingsbesonderhede, of enige sensitiewe persoonlike inligting via die webwerf nie. Betalings vir geborgde plasings of die carousel word direk met Jaco gereël (WhatsApp/kontant/EFT), nie deur die webwerf self nie.",
+          ],
+        },
+        {
+          h: "3. Hoekom Ons Dit Versamel",
+          p: [
+            "Ons gebruik jou inligting om:",
+            "• Jou plasings, kommentare, en besigheidslysings op die webwerf te vertoon",
+            "• Kontak tussen gemeenskapslede en besighede moontlik te maak",
+            "• Die webwerf te modereer (bv. rapporteerde inhoud hersien)",
+            "• Toekomstige funksies te ontwikkel, insluitend moontlike AI-gebaseerde funksies wat op geakkumuleerde, geanonimiseerde plasing-data gebaseer is (bv. 'n hulpbron wat algemene vrae kan beantwoord)",
+          ],
+        },
+        {
+          h: "4. Hoe Lank Ons Dit Hou",
+          p: [
+            "Plasings verdwyn na 30 dae uit die openbare feed (afhangende van kategorie), maar bly permanent in ons databasis vir rekord- en toekomstige ontwikkelingsdoeleindes, tensy jy versoek dat dit verwyder word.",
+          ],
+        },
+        {
+          h: "5. Wie Toegang Het",
+          p: [
+            "Jou plasings, kommentare, en besigheidsinligting is openbaar sigbaar vir enigeen wat die webwerf besoek. Slegs Jaco du Plessis (as administrateur) het toegang tot die agtergrond-databasis en enige addisionele besonderhede.",
+          ],
+        },
+        {
+          h: "6. Jou Regte",
+          p: [
+            "Onder POPIA het jy die reg om:",
+            "• Te vra watter inligting ons oor jou het",
+            "• Te vra dat foutiewe inligting reggestel word",
+            "• Te vra dat jou inligting verwyder word",
+            "Kontak Jaco du Plessis by die besonderhede hieronder om enige van hierdie regte uit te oefen.",
+          ],
+        },
+        {
+          h: "7. Kontak Ons",
+          p: [
+            "Vir enige vrae oor jou privaatheid of hierdie beleid, kontak Jaco du Plessis:",
+            "WhatsApp: 060 366 1384",
+            "E-pos: duplessisjaco978@gmail.com",
+          ],
+        },
+      ],
+    },
+    en: {
+      title: "Privacy Policy",
+      updated: "Last updated: August 2026",
+      sections: [
+        {
+          h: "1. Who We Are",
+          p: [
+            "Ons Brandfort Bulletin is operated by Jaco du Plessis, as a sole proprietor in Brandfort, Free State. We are responsible for any personal information collected through this website, in accordance with South Africa's Protection of Personal Information Act (POPIA).",
+          ],
+        },
+        {
+          h: "2. What Information We Collect",
+          p: [
+            "When you use the website, we may collect:",
+            "• Your name (when you submit a post, comment, business listing, or event)",
+            "• Contact details such as phone number or email (for business listings)",
+            "• Photos you upload (e.g. lost/found items, event photos, business photos)",
+            "• The content of your posts and comments",
+            "We do NOT collect passwords, payment details, or any sensitive personal information through the website. Payments for sponsored posts or the carousel are arranged directly with Jaco (WhatsApp/cash/EFT), not through the website itself.",
+          ],
+        },
+        {
+          h: "3. Why We Collect It",
+          p: [
+            "We use your information to:",
+            "• Display your posts, comments, and business listings on the website",
+            "• Enable contact between community members and businesses",
+            "• Moderate the website (e.g. reviewing reported content)",
+            "• Develop future features, including possible AI-based features based on accumulated, anonymized post data (e.g. a resource that can answer common questions)",
+          ],
+        },
+        {
+          h: "4. How Long We Keep It",
+          p: [
+            "Posts disappear from the public feed after 30 days (depending on category), but remain permanently in our database for record-keeping and future development purposes, unless you request removal.",
+          ],
+        },
+        {
+          h: "5. Who Has Access",
+          p: [
+            "Your posts, comments, and business information are publicly visible to anyone who visits the website. Only Jaco du Plessis (as administrator) has access to the backend database and any additional details.",
+          ],
+        },
+        {
+          h: "6. Your Rights",
+          p: [
+            "Under POPIA, you have the right to:",
+            "• Ask what information we hold about you",
+            "• Ask for incorrect information to be corrected",
+            "• Ask for your information to be deleted",
+            "Contact Jaco du Plessis using the details below to exercise any of these rights.",
+          ],
+        },
+        {
+          h: "7. Contact Us",
+          p: [
+            "For any questions about your privacy or this policy, contact Jaco du Plessis:",
+            "WhatsApp: 060 366 1384",
+            "Email: duplessisjaco978@gmail.com",
+          ],
+        },
+      ],
+    },
+  };
+
+  const t = text[lang];
+
+  return (
+    <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
+      <Nav lang={lang} />
+      <div className="max-w-2xl mx-auto mt-8">
+        <button
+          onClick={() => setLang(lang === "af" ? "en" : "af")}
+          className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition mb-8"
+        >
+          {lang === "af" ? "English" : "Afrikaans"}
+        </button>
+
+        <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+        <p className="text-neutral-500 text-sm mb-8">{t.updated}</p>
+
+        <div className="space-y-6">
+          {t.sections.map((s, i) => (
+            <div key={i}>
+              <h2 className="text-lg font-semibold text-orange-400 mb-2">{s.h}</h2>
+              {s.p.map((para, j) => (
+                <p key={j} className="text-neutral-300 leading-relaxed mb-2">
+                  {para}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <a href="/" className="block text-center text-neutral-400 hover:text-white underline mt-10">
+          {lang === "af" ? "Terug na Tuisblad" : "Back to Homepage"}
+        </a>
+      </div>
+    </main>
+  );
+}

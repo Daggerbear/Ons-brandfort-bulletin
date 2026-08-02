@@ -6,6 +6,7 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem("adminAuth") === "true") {
@@ -14,9 +15,19 @@ export default function Admin() {
     setChecked(true);
   }, []);
 
-  const checkPassword = (e) => {
+  const checkPassword = async (e) => {
     e.preventDefault();
-    if (password === "Daggerbear132580#") {
+    setSubmitting(true);
+
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    setSubmitting(false);
+
+    if (res.ok) {
       sessionStorage.setItem("adminAuth", "true");
       setAuthenticated(true);
     } else {
@@ -45,9 +56,10 @@ export default function Admin() {
           />
           <button
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold rounded-lg px-4 py-3"
+            disabled={submitting}
+            className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold rounded-lg px-4 py-3 disabled:opacity-50"
           >
-            Login
+            {submitting ? "Checking..." : "Login"}
           </button>
         </form>
       </main>
@@ -57,9 +69,10 @@ export default function Admin() {
   const sections = [
     { name: "Businesses", href: "/admin/businesses", desc: "Approve, edit, or reject business listings" },
     { name: "Events", href: "/admin/events", desc: "Approve, edit, or reject events" },
-    { name: "Brandfort Vra", href: "/admin/vra", desc: "Delete flagged questions or answers" },
-    { name: "Lost & Found", href: "/admin/lost-found", desc: "Delete flagged items" },
-    { name: "Shoutouts", href: "/admin/shoutouts", desc: "Delete flagged shoutouts" },
+    { name: "Gemeenskap Feed", href: "/admin/feed", desc: "Delete flagged or reported posts" },
+    { name: "Sponsored Ads", href: "/admin/ads", desc: "Add, edit, or remove sponsored flyer ads" },
+    { name: "Featured Businesses", href: "/admin/featured", desc: "Manage the homepage carousel" },
+    { name: "Homepage Background", href: "/admin/homepage", desc: "Change the hero background image" },
     { name: "Emergency Contacts", href: "/admin/emergency", desc: "Add, edit, or remove emergency numbers" },
   ];
 

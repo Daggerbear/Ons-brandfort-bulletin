@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
+import Link from "next/link";
 
 export default function ListBusiness() {
   const [lang, setLang] = useState("af");
@@ -36,6 +38,8 @@ export default function ListBusiness() {
       submitting: "Besig...",
       thanks: "Dankie! Jou besigheid wag nou vir goedkeuring.",
       back: "Terug na Tuisblad",
+      agree: "Deur in te dien, stem jy in tot ons",
+      terms: "Bepalings & Voorwaardes",
     },
     en: {
       heading: "List Your Business",
@@ -54,6 +58,8 @@ export default function ListBusiness() {
       submitting: "Submitting...",
       thanks: "Thanks! Your business is now pending approval.",
       back: "Back to Homepage",
+      agree: "By submitting, you agree to our",
+      terms: "Terms & Conditions",
     },
   };
 
@@ -121,9 +127,9 @@ export default function ListBusiness() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
+    <main className="min-h-screen bg-neutral-950 text-white px-6 py-10 flex flex-col">
       <Nav lang={lang} />
-      <div className="max-w-md mx-auto mt-8">
+      <div className="max-w-md mx-auto mt-8 flex-1 w-full">
         <button
           onClick={() => setLang(lang === "af" ? "en" : "af")}
           className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition mb-8"
@@ -256,6 +262,14 @@ export default function ListBusiness() {
               >
                 {uploading ? t.submitting : t.submit}
               </button>
+
+              <p className="text-xs text-neutral-500 text-center">
+                {t.agree}{" "}
+                <Link href="/terms" className="underline hover:text-orange-400">
+                  {t.terms}
+                </Link>
+                .
+              </p>
             </form>
           </>
         ) : (
@@ -267,6 +281,8 @@ export default function ListBusiness() {
           </div>
         )}
       </div>
+
+      <Footer lang={lang} />
     </main>
   );
 }

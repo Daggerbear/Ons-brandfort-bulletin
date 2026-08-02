@@ -4,11 +4,14 @@ import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Link from "next/link";
+import Footer from "@/components/Footer";
 import Image from "next/image";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
 
 export default function Home() {
   const [lang, setLang] = useState("af");
   const [events, setEvents] = useState([]);
+  const [heroUrl, setHeroUrl] = useState(null);
 
   const text = {
     af: {
@@ -17,9 +20,7 @@ export default function Home() {
       footer: "Gebou deur Jaco du Plessis — vir Brandfort, deur Brandfort.",
       cards: [
         { title: "🏪 Ons Besighede", desc: "Deurblaai plaaslike besighede volgens kategorie.", href: "/besighede" },
-        { title: "❓ Brandfort Vra", desc: "Vra iets, kry hulp van die gemeenskap.", href: "/brandfort-vra" },
-        { title: "🐾 Verlore & Gevind", desc: "Help mekaar om verlore items te vind.", href: "/lost-found" },
-        { title: "📣 Shoutouts", desc: "Verjaardae, dankie-boodskappe, en meer.", href: "/shoutouts" },
+        { title: "💬 Gemeenskap Feed", desc: "Vra vrae, deel nuus, gee shoutouts — alles op een plek.", href: "/feed" },
         { title: "🚨 Nood Kontakte", desc: "Belangrike nommers altyd byderhand.", href: "/emergency" },
       ],
     },
@@ -29,9 +30,7 @@ export default function Home() {
       footer: "Built by Jaco du Plessis — for Brandfort, by Brandfort.",
       cards: [
         { title: "🏪 Our Businesses", desc: "Browse local businesses by category.", href: "/besighede" },
-        { title: "❓ Brandfort Ask", desc: "Ask something, get help from the community.", href: "/brandfort-vra" },
-        { title: "🐾 Lost & Found", desc: "Help each other find lost items.", href: "/lost-found" },
-        { title: "📣 Shoutouts", desc: "Birthdays, thank-yous, and more.", href: "/shoutouts" },
+        { title: "💬 Community Feed", desc: "Ask questions, share news, give shoutouts — all in one place.", href: "/feed" },
         { title: "🚨 Emergency Contacts", desc: "Important numbers always at hand.", href: "/emergency" },
       ],
     },
@@ -47,15 +46,33 @@ export default function Home() {
         .eq("status", "approved")
         .order("created_at", { ascending: false });
       setEvents(eventData || []);
+
+      const { data: settingsData } = await supabase
+        .from("site_settings")
+        .select("hero_image_url")
+        .eq("id", 1)
+        .single();
+      setHeroUrl(settingsData?.hero_image_url || null);
     };
     loadData();
   }, []);
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
+    <main className="min-h-screen bg-carbon text-white">
       <Nav lang={lang} />
 
-      <header className="border-b border-neutral-800 px-6 py-8 text-center">
+      <header
+        className="relative border-b border-neutral-800 px-6 py-8 text-center overflow-hidden"
+        style={
+          heroUrl
+            ? {
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.75)), url('${heroUrl}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}
+        }
+      >
         <div className="flex justify-end mb-4">
           <button
             onClick={() => setLang(lang === "af" ? "en" : "af")}
@@ -91,7 +108,15 @@ export default function Home() {
               className="flex gap-4 bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-orange-500 transition"
             >
               {event.image_url ? (
-                <img src={event.image_url} alt={event.title} className="w-14 h-14 object-cover rounded-lg border border-neutral-800 flex-shrink-0" />
+                <div className="relative w-14 h-14 flex-shrink-0 rounded-lg border border-neutral-800 overflow-hidden">
+                  <Image
+                    src={event.image_url}
+                    alt={event.title}
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
               )}
@@ -104,6 +129,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <FeaturedCarousel lang={lang} />
 
       {/* Quick-link cards */}
       <section className="px-6 py-10 max-w-2xl mx-auto">
@@ -131,9 +158,7 @@ export default function Home() {
         </a>
       </section>
 
-      <footer className="border-t border-neutral-800 px-6 py-8 text-center text-neutral-500 text-sm">
-        {t.footer}
-      </footer>
+      <Footer lang={lang} />
     </main>
   );
 }

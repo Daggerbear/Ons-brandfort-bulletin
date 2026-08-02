@@ -80,10 +80,10 @@ export default function Besighede() {
               ) : (
                 <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
               )}
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-orange-400">{business.name}</h3>
                 <p className="text-sm text-neutral-400 mt-1">{business.category}</p>
-                <p className="text-neutral-300 mt-2">{business.description}</p>
+                <p className="text-neutral-300 mt-2 line-clamp-2">{business.description}</p>
                 <p className="text-sm text-neutral-400 mt-2">📞 {business.contact}</p>
               </div>
             </Link>
