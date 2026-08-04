@@ -72,7 +72,9 @@ export default function Admin() {
     { name: "Gemeenskap Feed", href: "/admin/feed", desc: "Delete flagged or reported posts" },
     { name: "Sponsored Ads", href: "/admin/ads", desc: "Add, edit, or remove sponsored flyer ads" },
     { name: "Featured Businesses", href: "/admin/featured", desc: "Manage the homepage carousel" },
-    { name: "Homepage Background", href: "/admin/homepage", desc: "Change the hero background image" },
+    { name: "Classifieds", href: "/admin/classifieds", desc: "Moderate buy & sell listings" },
+    { name: "Jobs", href: "/admin/jobs", desc: "Moderate job listings & work-seeker posts" },
+    { name: "Site Backgrounds", href: "/admin/backgrounds", desc: "Manage backgrounds and images across the site" },
     { name: "Emergency Contacts", href: "/admin/emergency", desc: "Add, edit, or remove emergency numbers" },
   ];
 

@@ -20,9 +20,10 @@ export default function Privacy() {
           h: "2. Watter Inligting Ons Versamel",
           p: [
             "Wanneer jy die webwerf gebruik, kan ons die volgende versamel:",
-            "• Jou naam (wanneer jy 'n plasing, kommentaar, besigheidslysing, of gebeurtenis indien)",
+            "• Jou naam (wanneer jy 'n plasing, kommentaar, besigheidslysing, gebeurtenis, koop & verkoop item, of werksadvertensie indien)",
             "• Kontakbesonderhede soos foonnommer of e-pos (vir besigheidslysings)",
-            "• Foto's wat jy oplaai (bv. verlore/gevind items, gebeurtenisfoto's, besigheidsfoto's)",
+            "• Jou WhatsApp nommer (vir Koop & Verkoop en Werk plasings — sien afdeling 5 vir hoe dit gebruik word)",
+            "• Foto's wat jy oplaai (bv. verlore/gevind items, gebeurtenisfoto's, besigheidsfoto's, koop & verkoop items)",
             "• Inhoud van jou plasings en kommentare",
             "Ons versamel NIE wagwoorde, betalingsbesonderhede, of enige sensitiewe persoonlike inligting via die webwerf nie. Betalings vir geborgde plasings of die carousel word direk met Jaco gereël (WhatsApp/kontant/EFT), nie deur die webwerf self nie.",
           ],
@@ -33,6 +34,7 @@ export default function Privacy() {
             "Ons gebruik jou inligting om:",
             "• Jou plasings, kommentare, en besigheidslysings op die webwerf te vertoon",
             "• Kontak tussen gemeenskapslede en besighede moontlik te maak",
+            "• Kontak tussen kopers/verkopers (Koop & Verkoop) en werkgewers/werksoekers (Werk) moontlik te maak via WhatsApp",
             "• Die webwerf te modereer (bv. rapporteerde inhoud hersien)",
             "• Toekomstige funksies te ontwikkel, insluitend moontlike AI-gebaseerde funksies wat op geakkumuleerde, geanonimiseerde plasing-data gebaseer is (bv. 'n hulpbron wat algemene vrae kan beantwoord)",
           ],
@@ -41,12 +43,14 @@ export default function Privacy() {
           h: "4. Hoe Lank Ons Dit Hou",
           p: [
             "Plasings verdwyn na 30 dae uit die openbare feed (afhangende van kategorie), maar bly permanent in ons databasis vir rekord- en toekomstige ontwikkelingsdoeleindes, tensy jy versoek dat dit verwyder word.",
+            "Koop & Verkoop items en Werk plasings verval nie outomaties nie — dit bly sigbaar totdat die plasing self as 'verkoop', 'gevul', of 'onbeskikbaar' gemerk word, of deur 'n administrateur verwyder word.",
           ],
         },
         {
           h: "5. Wie Toegang Het",
           p: [
             "Jou plasings, kommentare, en besigheidsinligting is openbaar sigbaar vir enigeen wat die webwerf besoek. Slegs Jaco du Plessis (as administrateur) het toegang tot die agtergrond-databasis en enige addisionele besonderhede.",
+            "Vir Koop & Verkoop en Werk plasings word jou WhatsApp nommer nie as leesbare teks op die bladsy vertoon nie — dit word slegs binne-in die 'WhatsApp' knoppie se skakel ingebed sodat kopers/werkgewers jou direk kan kontak. Let egter daarop dat enigeen wat die bladsy se broncode ('page source') bekyk, moontlik hierdie nommer daar kan sien.",
           ],
         },
         {
@@ -83,9 +87,10 @@ export default function Privacy() {
           h: "2. What Information We Collect",
           p: [
             "When you use the website, we may collect:",
-            "• Your name (when you submit a post, comment, business listing, or event)",
+            "• Your name (when you submit a post, comment, business listing, event, buy & sell item, or job listing)",
             "• Contact details such as phone number or email (for business listings)",
-            "• Photos you upload (e.g. lost/found items, event photos, business photos)",
+            "• Your WhatsApp number (for Buy & Sell and Jobs listings — see section 5 for how this is used)",
+            "• Photos you upload (e.g. lost/found items, event photos, business photos, buy & sell items)",
             "• The content of your posts and comments",
             "We do NOT collect passwords, payment details, or any sensitive personal information through the website. Payments for sponsored posts or the carousel are arranged directly with Jaco (WhatsApp/cash/EFT), not through the website itself.",
           ],
@@ -96,6 +101,7 @@ export default function Privacy() {
             "We use your information to:",
             "• Display your posts, comments, and business listings on the website",
             "• Enable contact between community members and businesses",
+            "• Enable contact between buyers/sellers (Buy & Sell) and employers/job seekers (Jobs) via WhatsApp",
             "• Moderate the website (e.g. reviewing reported content)",
             "• Develop future features, including possible AI-based features based on accumulated, anonymized post data (e.g. a resource that can answer common questions)",
           ],
@@ -104,12 +110,14 @@ export default function Privacy() {
           h: "4. How Long We Keep It",
           p: [
             "Posts disappear from the public feed after 30 days (depending on category), but remain permanently in our database for record-keeping and future development purposes, unless you request removal.",
+            "Buy & Sell items and Jobs listings do not automatically expire — they remain visible until the listing itself is marked 'sold', 'filled', or 'unavailable', or removed by an administrator.",
           ],
         },
         {
           h: "5. Who Has Access",
           p: [
             "Your posts, comments, and business information are publicly visible to anyone who visits the website. Only Jaco du Plessis (as administrator) has access to the backend database and any additional details.",
+            "For Buy & Sell and Jobs listings, your WhatsApp number is not displayed as readable text on the page — it's only embedded within the 'WhatsApp' button's link so buyers/employers can contact you directly. Note, however, that anyone viewing the page's source code could potentially see this number there.",
           ],
         },
         {

@@ -21,7 +21,10 @@ export default function Home() {
       cards: [
         { title: "🏪 Ons Besighede", desc: "Deurblaai plaaslike besighede volgens kategorie.", href: "/besighede" },
         { title: "💬 Gemeenskap Feed", desc: "Vra vrae, deel nuus, gee shoutouts — alles op een plek.", href: "/feed" },
+        { title: "🛒 Koop & Verkoop", desc: "Plaaslike classifieds — koop en verkoop direk met mekaar.", href: "/classifieds" },
+        { title: "💼 Werk", desc: "Vind werk of adverteer 'n vakature plaaslik.", href: "/jobs" },
         { title: "🚨 Nood Kontakte", desc: "Belangrike nommers altyd byderhand.", href: "/emergency" },
+        { title: "🕹️ Glitch Cafe", desc: "Speletjies vir 'n bietjie plesier — Battleship, Sudoku, Riddle Rush.", href: "/games" },
       ],
     },
     en: {
@@ -31,7 +34,10 @@ export default function Home() {
       cards: [
         { title: "🏪 Our Businesses", desc: "Browse local businesses by category.", href: "/besighede" },
         { title: "💬 Community Feed", desc: "Ask questions, share news, give shoutouts — all in one place.", href: "/feed" },
+        { title: "🛒 Buy & Sell", desc: "Local classifieds — buy and sell directly with each other.", href: "/classifieds" },
+        { title: "💼 Jobs", desc: "Find work or advertise an opening locally.", href: "/jobs" },
         { title: "🚨 Emergency Contacts", desc: "Important numbers always at hand.", href: "/emergency" },
+        { title: "🕹️ Glitch Cafe", desc: "Local games for a bit of fun — Battleship, Sudoku, Riddle Rush.", href: "/games" },
       ],
     },
   };

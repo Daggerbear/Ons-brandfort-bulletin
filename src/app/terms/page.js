@@ -38,26 +38,34 @@ export default function Terms() {
           ],
         },
         {
-          h: "5. Besigheidslysings en Adverteer",
+          h: "5. Koop & Verkoop en Werk",
+          p: [
+            "Die Koop & Verkoop en Werk afdelings is platforms waar gebruikers direk met mekaar kan skakel via WhatsApp. Ons Brandfort Bulletin is nie 'n party tot enige transaksie, ooreenkoms, of aanstelling wat tussen gebruikers plaasvind nie, en fasiliteer geen betalings nie.",
+            "Kopers en verkopers, en werkgewers en werksoekers, is self verantwoordelik om die geldigheid en veiligheid van enige transaksie of ooreenkoms te verseker. Ons aanvaar geen aanspreeklikheid vir verlies, skade, bedrog, of dispute wat uit sulke interaksies ontstaan nie.",
+            "Dieselfde reëls in Afdeling 4 (Inhoud en Verantwoordelikheid) geld ook vir plasings in hierdie afdelings.",
+          ],
+        },
+        {
+          h: "6. Besigheidslysings en Adverteer",
           p: [
             "Basiese besigheidslysings is gratis. Uitgeligte plekke op die tuisblad-carousel en geborgde plasings in die feed is betaalde geleenthede. Pryse en beskikbaarheid kan verander sonder vooraf kennisgewing.",
             "Ons behou die reg voor om enige besigheidslysing te weier, wysig, of verwyder wat nie aan ons standaarde voldoen nie.",
           ],
         },
         {
-          h: "6. Geen Waarborge Nie",
+          h: "7. Geen Waarborge Nie",
           p: [
             "Die webwerf word 'as is' verskaf. Ons waarborg nie ononderbroke toegang, foutlose werking, of dat inligting op die webwerf altyd op datum is nie.",
           ],
         },
         {
-          h: "7. Wysigings",
+          h: "8. Wysigings",
           p: [
             "Ons kan hierdie bepalings te eniger tyd wysig. Voortgesette gebruik van die webwerf na wysigings beteken jy aanvaar die bygewerkte bepalings.",
           ],
         },
         {
-          h: "8. Kontak Ons",
+          h: "9. Kontak Ons",
           p: [
             "Vir enige vrae oor hierdie bepalings, kontak Jaco du Plessis:",
             "WhatsApp: 060 366 1384",
@@ -67,7 +75,7 @@ export default function Terms() {
       ],
     },
     en: {
-      title: "Terms & Conditions",
+      title: "Terms and Conditions",
       updated: "Last updated: August 2026",
       sections: [
         {
@@ -85,7 +93,7 @@ export default function Terms() {
         {
           h: "3. Community Feed and Posts",
           p: [
-            "The Community Feed is intended for personal, non-commercial use — questions, lost/found items, announcements, shoutouts, and similar content.",
+            "The Community Feed is intended for personal, non-commercial use — questions, lost/found items, announcements, shoutouts, and similar.",
             "Businesses may NOT use free posts to advertise their business, products, or services. Business advertising is only available through the paid Sponsored Posts or Business Carousel opportunities. Contact us for pricing.",
             "We reserve the right to remove any post that doesn't comply with these rules, without prior notice, at the administrator's discretion.",
           ],
@@ -94,30 +102,38 @@ export default function Terms() {
           h: "4. Content and Responsibility",
           p: [
             "Users are solely responsible for any content they post. Ons Brandfort Bulletin does not verify the accuracy of user content (e.g. lost/found items, business descriptions, comments) and accepts no liability for incorrect, misleading, or inappropriate content posted by users.",
-            "Use the 🚩 Report function to flag inappropriate content to us. Posts are automatically hidden after 3 reports and reviewed by the administrator.",
+            "Use the 🚩 Report function to flag inappropriate content to us. Posts are automatically hidden after 3 reports, and reviewed by the administrator.",
           ],
         },
         {
-          h: "5. Business Listings and Advertising",
+          h: "5. Buy & Sell and Jobs",
           p: [
-            "Basic business listings are free. Featured spots on the homepage carousel and sponsored posts in the feed are paid opportunities. Pricing and availability may change without prior notice.",
-            "We reserve the right to refuse, edit, or remove any business listing that does not meet our standards.",
+            "The Buy & Sell and Jobs sections are platforms where users can connect directly with each other via WhatsApp. Ons Brandfort Bulletin is not a party to any transaction, agreement, or hiring arrangement that takes place between users, and does not facilitate any payments.",
+            "Buyers and sellers, and employers and job seekers, are solely responsible for ensuring the legitimacy and safety of any transaction or agreement. We accept no liability for loss, damage, fraud, or disputes arising from such interactions.",
+            "The same rules in Section 4 (Content and Responsibility) also apply to posts in these sections.",
           ],
         },
         {
-          h: "6. No Warranties",
+          h: "6. Business Listings and Advertising",
           p: [
-            "The website is provided 'as is.' We do not guarantee uninterrupted access, error-free operation, or that information on the website is always up to date.",
+            "Basic business listings are free. Featured spots on the homepage carousel and sponsored posts in the feed are paid opportunities. Prices and availability may change without prior notice.",
+            "We reserve the right to refuse, edit, or remove any business listing that doesn't meet our standards.",
           ],
         },
         {
-          h: "7. Changes",
+          h: "7. No Warranties",
           p: [
-            "We may change these terms at any time. Continued use of the website after changes means you accept the updated terms.",
+            "The website is provided 'as is'. We do not guarantee uninterrupted access, error-free operation, or that information on the website is always up to date.",
           ],
         },
         {
-          h: "8. Contact Us",
+          h: "8. Changes",
+          p: [
+            "We may modify these terms at any time. Continued use of the website after changes means you accept the updated terms.",
+          ],
+        },
+        {
+          h: "9. Contact Us",
           p: [
             "For any questions about these terms, contact Jaco du Plessis:",
             "WhatsApp: 060 366 1384",
