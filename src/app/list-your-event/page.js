@@ -17,6 +17,7 @@ export default function ListEvent() {
     location: "",
     description: "",
     submittedBy: "",
+    whatsapp: "",
   });
 
   const text = {
@@ -29,6 +30,7 @@ export default function ListEvent() {
       location: "Plek",
       description: "Beskrywing",
       submittedBy: "Jou Naam",
+      whatsapp: "WhatsApp Nommer (bv. 0821234567)",
       photo: "Foto (opsioneel)",
       choosePhoto: "Kies foto",
       submit: "Dien In",
@@ -47,6 +49,7 @@ export default function ListEvent() {
       location: "Location",
       description: "Description",
       submittedBy: "Your Name",
+      whatsapp: "WhatsApp Number (e.g. 0821234567)",
       photo: "Photo (optional)",
       choosePhoto: "Choose photo",
       submit: "Submit",
@@ -95,6 +98,7 @@ export default function ListEvent() {
         location: form.location,
         description: form.description,
         submittedBy: form.submittedBy,
+        whatsapp: form.whatsapp,
         image_url,
       },
     ]);
@@ -192,6 +196,18 @@ export default function ListEvent() {
                   type="text"
                   name="submittedBy"
                   value={form.submittedBy}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-orange-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-neutral-400 mb-1">{t.whatsapp}</label>
+                <input
+                  type="text"
+                  name="whatsapp"
+                  value={form.whatsapp}
                   onChange={handleChange}
                   required
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-orange-500 outline-none"

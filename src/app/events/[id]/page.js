@@ -12,8 +12,18 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
 
   const text = {
-    af: { back: "← Terug na Tuisblad", loading: "Laai...", notFound: "Gebeurtenis nie gevind nie." },
-    en: { back: "← Back to Homepage", loading: "Loading...", notFound: "Event not found." },
+    af: {
+      back: "← Terug na Tuisblad",
+      loading: "Laai...",
+      notFound: "Gebeurtenis nie gevind nie.",
+      share: "📤 WhatsApp",
+    },
+    en: {
+      back: "← Back to Homepage",
+      loading: "Loading...",
+      notFound: "Event not found.",
+      share: "📤 WhatsApp",
+    },
   };
   const t = text[lang];
 
@@ -25,6 +35,22 @@ export default function EventDetail() {
     };
     loadEvent();
   }, [id]);
+
+  function buildShareMessage() {
+    if (!event) return "";
+    return lang === "af"
+      ? `Ek kontak jou aangaande "${event.title}"`
+      : `I'm contacting you about "${event.title}"`;
+  }
+
+  function getWhatsAppUrl() {
+    const message = buildShareMessage();
+    if (event?.whatsapp) {
+      const cleanNumber = event.whatsapp.replace(/^0/, "").replace(/\D/g, "");
+      return `https://wa.me/27${cleanNumber}?text=${encodeURIComponent(message)}`;
+    }
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  }
 
   if (loading) {
     return (
@@ -68,6 +94,15 @@ export default function EventDetail() {
             <p className="text-sm text-neutral-400">{event.location}</p>
             <p className="text-neutral-300 mt-4">{event.description}</p>
             <p className="text-sm text-neutral-500 mt-4">— {event.submittedBy}</p>
+
+            <a
+              href={getWhatsAppUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 transition text-white font-semibold rounded-lg px-5 py-3 w-full"
+            >
+              {t.share}
+            </a>
           </div>
         </div>
       </section>

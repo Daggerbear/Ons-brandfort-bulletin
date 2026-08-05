@@ -18,6 +18,7 @@ export default function BattleshipHome() {
   const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
 
   async function handleCreate() {
     if (!name.trim()) {
@@ -72,7 +73,6 @@ export default function BattleshipHome() {
       return;
     }
 
-    // Rejoin: name matches an existing player in this room
     if (data.player1_name === enteredName) {
       setLoading(false);
       router.push(`/games/battleship/${code}?as=player1`);
@@ -84,7 +84,6 @@ export default function BattleshipHome() {
       return;
     }
 
-    // New player trying to join
     if (data.player2_name) {
       setLoading(false);
       setError("That room is already full.");
@@ -110,9 +109,26 @@ export default function BattleshipHome() {
     <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <h1 className="text-3xl font-bold text-center mb-2">🚢 Battleship</h1>
-        <p className="text-neutral-400 text-center mb-8">
+        <p className="text-neutral-400 text-center mb-4">
           Play against a friend, no account needed.
         </p>
+
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full text-center text-sm text-orange-400 hover:text-orange-300 underline mb-6"
+        >
+          {showHelp ? "Hide" : "❓ How to Play"}
+        </button>
+
+        {showHelp && (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6 text-sm text-neutral-300 space-y-2">
+            <p>🎮 One player creates a game, the other joins with the room code.</p>
+            <p>🚢 Each player secretly places 7 ship cells on their own 6x6 grid.</p>
+            <p>🎯 Take turns firing at your opponent's grid — 💥 means a hit, • means a miss.</p>
+            <p>🏆 First to hit all 7 of the opponent's ship cells wins.</p>
+            <p>🔄 Lost connection or refreshed the page? Just rejoin using the same name and room code.</p>
+          </div>
+        )}
 
         <input
           type="text"

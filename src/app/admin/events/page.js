@@ -121,29 +121,41 @@ export default function AdminEvents() {
                 </label>
               </div>
 
+              <label className="block text-xs text-neutral-500 mb-1">Title</label>
               <input
                 defaultValue={ev.title}
                 onBlur={(e) => updateEvent(ev.id, "title", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
+              <label className="block text-xs text-neutral-500 mb-1">Date</label>
               <input
                 defaultValue={ev.date}
                 onBlur={(e) => updateEvent(ev.id, "date", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
+              <label className="block text-xs text-neutral-500 mb-1">Time</label>
               <input
                 defaultValue={ev.time}
                 onBlur={(e) => updateEvent(ev.id, "time", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
+              <label className="block text-xs text-neutral-500 mb-1">Location</label>
               <input
                 defaultValue={ev.location}
                 onBlur={(e) => updateEvent(ev.id, "location", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
+              <label className="block text-xs text-neutral-500 mb-1">Description</label>
               <textarea
                 defaultValue={ev.description}
                 onBlur={(e) => updateEvent(ev.id, "description", e.target.value)}
+                className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
+              />
+              <label className="block text-xs text-neutral-500 mb-1">WhatsApp Number</label>
+              <input
+                defaultValue={ev.whatsapp}
+                onBlur={(e) => updateEvent(ev.id, "whatsapp", e.target.value)}
+                placeholder="e.g. 0821234567"
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
               <p className="text-sm text-neutral-400 mb-2">status: {ev.status}</p>

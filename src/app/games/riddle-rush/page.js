@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-const ANCHOR_UTC = Date.UTC(2026, 7, 3); // Riddle Rush launch day = day_index 1
+const ANCHOR_UTC = Date.UTC(2026, 7, 3);
 const TOTAL_RIDDLES = 50;
 
 function getDayIndex() {
@@ -37,6 +37,7 @@ export default function RiddleRush() {
   const [feedback, setFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [showHelp, setShowHelp] = useState(false);
 
   const loadLeaderboard = useCallback(async () => {
     const { data } = await supabase
@@ -193,9 +194,27 @@ export default function RiddleRush() {
         >
           Riddle Rush
         </h1>
-        <p className="text-neutral-500 text-center text-sm mb-8 tracking-wide uppercase">
+        <p className="text-neutral-500 text-center text-sm mb-4 tracking-wide uppercase">
           🧩 One riddle a day
         </p>
+
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full text-center text-sm text-pink-400 hover:text-pink-300 underline mb-6"
+        >
+          {showHelp ? "Hide" : "❓ How to Play"}
+        </button>
+
+        {showHelp && (
+          <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-5 mb-6 text-sm text-neutral-300 space-y-2">
+            <p>🧩 A new riddle appears every day — same one for everyone.</p>
+            <p>✍️ Type your answer and hit Submit.</p>
+            <p>🎯 3 points if you get it on your 1st try, 2 on your 2nd, 1 on your 3rd.</p>
+            <p>🔒 After 3 wrong guesses, that day's riddle locks — come back tomorrow!</p>
+            <p>🏆 Points add up on the monthly leaderboard, which resets every month.</p>
+            <p>👥 Sharing a phone? Use "Switch player" to let someone else play under their own name.</p>
+          </div>
+        )}
 
         {loading && <p className="text-center text-neutral-500">Loading...</p>}
 
