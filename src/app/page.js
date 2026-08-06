@@ -7,6 +7,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
+import InstallButton from "@/components/InstallButton";
 
 export default function Home() {
   const [lang, setLang] = useState("af");
@@ -101,6 +102,10 @@ export default function Home() {
             ? "'n Gratis platform waar elke plaaslike besigheid en gemeenskapsgeleentheid op een plek is."
             : "A free platform where every local business and community event lives in one place."}
         </p>
+
+        <div className="mt-6 flex justify-center">
+          <InstallButton lang={lang} />
+        </div>
       </header>
 
       {/* Events Section */}
