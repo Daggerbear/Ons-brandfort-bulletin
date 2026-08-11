@@ -20,7 +20,7 @@ function generateRoomCode() {
   return code;
 }
 
-export default function BattleshipHome() {
+export default function ChessHome() {
   const router = useRouter();
   const [player, setPlayer] = useState(null);
   const [joinCode, setJoinCode] = useState("");
@@ -50,7 +50,7 @@ export default function BattleshipHome() {
     const roomCode = generateRoomCode();
 
     const { data, error: insertError } = await supabase
-      .from("battleship_rooms")
+      .from("chess_rooms")
       .insert({
         room_code: roomCode,
         player1_name: player.name,
@@ -66,7 +66,7 @@ export default function BattleshipHome() {
       return;
     }
 
-    router.push(`/games/battleship/${data.room_code}?as=player1`);
+    router.push(`/games/chess/${data.room_code}?as=player1`);
   }
 
   async function handleJoin() {
@@ -80,7 +80,7 @@ export default function BattleshipHome() {
     const code = joinCode.trim().toUpperCase();
 
     const { data, error: fetchError } = await supabase
-      .from("battleship_rooms")
+      .from("chess_rooms")
       .select("*")
       .eq("room_code", code)
       .single();
@@ -93,12 +93,12 @@ export default function BattleshipHome() {
 
     if (data.player1_name === player.name) {
       setLoading(false);
-      router.push(`/games/battleship/${code}?as=player1`);
+      router.push(`/games/chess/${code}?as=player1`);
       return;
     }
     if (data.player2_name === player.name) {
       setLoading(false);
-      router.push(`/games/battleship/${code}?as=player2`);
+      router.push(`/games/chess/${code}?as=player2`);
       return;
     }
 
@@ -109,8 +109,8 @@ export default function BattleshipHome() {
     }
 
     const { error: updateError } = await supabase
-      .from("battleship_rooms")
-      .update({ player2_name: player.name, status: "placing" })
+      .from("chess_rooms")
+      .update({ player2_name: player.name, status: "playing" })
       .eq("id", data.id);
 
     setLoading(false);
@@ -120,24 +120,24 @@ export default function BattleshipHome() {
       return;
     }
 
-    router.push(`/games/battleship/${code}?as=player2`);
+    router.push(`/games/chess/${code}?as=player2`);
   }
 
   async function handleRandomOpponent() {
     setError("");
     setSearching(true);
 
-    const candidate = await findAndClaimWaitingOpponent("battleship", player.cell);
+    const candidate = await findAndClaimWaitingOpponent("chess", player.cell);
 
     if (candidate) {
       const roomCode = generateRoomCode();
       const { data, error: insertError } = await supabase
-        .from("battleship_rooms")
+        .from("chess_rooms")
         .insert({
           room_code: roomCode,
           player1_name: candidate.player_name,
           player2_name: player.name,
-          status: "placing",
+          status: "playing",
         })
         .select()
         .single();
@@ -149,11 +149,11 @@ export default function BattleshipHome() {
       }
 
       await markQueueMatched(candidate.id, roomCode, "player1");
-      router.push(`/games/battleship/${roomCode}?as=player2`);
+      router.push(`/games/chess/${roomCode}?as=player2`);
       return;
     }
 
-    const entry = await createQueueEntry("battleship", player.name, player.cell);
+    const entry = await createQueueEntry("chess", player.name, player.cell);
     if (!entry) {
       setSearching(false);
       setError("Something went wrong. Try again.");
@@ -162,7 +162,7 @@ export default function BattleshipHome() {
     setQueueId(entry.id);
 
     unsubRef.current = subscribeToQueueEntry(entry.id, (row) => {
-      router.push(`/games/battleship/${row.room_code}?as=${row.as_role}`);
+      router.push(`/games/chess/${row.room_code}?as=${row.as_role}`);
     });
   }
 
@@ -178,7 +178,7 @@ export default function BattleshipHome() {
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-bold text-center mb-2">🚢 Battleship</h1>
+        <h1 className="text-3xl font-bold text-center mb-2">♟️ Chess</h1>
         <p className="text-neutral-500 text-center text-sm mb-4">
           Playing as <span className="text-orange-400">{player.name}</span> ·{" "}
           <button onClick={switchPlayer} className="underline hover:text-white">
@@ -196,9 +196,8 @@ export default function BattleshipHome() {
         {showHelp && (
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6 text-sm text-neutral-300 space-y-2">
             <p>🎮 Create a room and share the code, or find a random opponent.</p>
-            <p>🚢 Each player secretly places 7 ship cells on their own 6x6 grid.</p>
-            <p>🎯 Take turns firing — 💥 means a hit, • means a miss.</p>
-            <p>🏆 First to hit all 7 of the opponent's ship cells wins.</p>
+            <p>♟️ Player 1 plays White, Player 2 plays Black. Standard chess rules.</p>
+            <p>👑 Pawns that reach the last rank automatically promote to a Queen.</p>
           </div>
         )}
 

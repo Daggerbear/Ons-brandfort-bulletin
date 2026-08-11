@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { getStoredPlayer, clearStoredPlayer } from "@/lib/playerAuth";
 
 const ANCHOR_UTC = Date.UTC(2026, 7, 3);
 const TOTAL_RIDDLES = 50;
@@ -25,10 +26,9 @@ function getMonthKey() {
 }
 
 export default function RiddleRush() {
+  const [player, setPlayer] = useState(null);
   const [riddle, setRiddle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
-  const [nameInput, setNameInput] = useState("");
   const [guess, setGuess] = useState("");
   const [tries, setTries] = useState(0);
   const [solved, setSolved] = useState(false);
@@ -77,6 +77,9 @@ export default function RiddleRush() {
     async function init() {
       setLoading(true);
 
+      const storedPlayer = getStoredPlayer();
+      setPlayer(storedPlayer);
+
       const dayIndex = getDayIndex();
       const { data } = await supabase
         .from("riddles")
@@ -85,10 +88,8 @@ export default function RiddleRush() {
         .single();
       setRiddle(data || null);
 
-      const savedName = localStorage.getItem("riddleRushName");
-      if (savedName) {
-        setName(savedName);
-        loadProgressFor(savedName);
+      if (storedPlayer) {
+        loadProgressFor(storedPlayer.name);
       }
 
       await loadLeaderboard();
@@ -100,31 +101,14 @@ export default function RiddleRush() {
   function saveProgress(newTries, newSolved, newLocked, newPoints) {
     const todayKey = getTodayKey();
     localStorage.setItem(
-      `riddleRush_${name}_${todayKey}`,
+      `riddleRush_${player.name}_${todayKey}`,
       JSON.stringify({ tries: newTries, solved: newSolved, locked: newLocked, pointsEarned: newPoints })
     );
   }
 
-  function saveName() {
-    if (!nameInput.trim()) return;
-    const trimmed = nameInput.trim();
-    localStorage.setItem("riddleRushName", trimmed);
-    setName(trimmed);
-    loadProgressFor(trimmed);
-    setFeedback("");
-    setGuess("");
-  }
-
   function switchPlayer() {
-    localStorage.removeItem("riddleRushName");
-    setName("");
-    setNameInput("");
-    setTries(0);
-    setSolved(false);
-    setLocked(false);
-    setPointsEarned(0);
-    setFeedback("");
-    setGuess("");
+    clearStoredPlayer();
+    window.location.href = "/games";
   }
 
   async function handleSubmit(e) {
@@ -148,7 +132,7 @@ export default function RiddleRush() {
       saveProgress(newTries, true, true, points);
 
       await supabase.from("riddle_scores").insert({
-        name,
+        name: player.name,
         points,
         month_key: getMonthKey(),
         day_key: new Date().toISOString().slice(0, 10),
@@ -171,6 +155,8 @@ export default function RiddleRush() {
     }
     setSubmitting(false);
   }
+
+  if (!player) return null;
 
   return (
     <main className="min-h-screen bg-black text-white px-6 py-12 relative overflow-hidden">
@@ -212,7 +198,6 @@ export default function RiddleRush() {
             <p>🎯 3 points if you get it on your 1st try, 2 on your 2nd, 1 on your 3rd.</p>
             <p>🔒 After 3 wrong guesses, that day's riddle locks — come back tomorrow!</p>
             <p>🏆 Points add up on the monthly leaderboard, which resets every month.</p>
-            <p>👥 Sharing a phone? Use "Switch player" to let someone else play under their own name.</p>
           </div>
         )}
 
@@ -222,26 +207,7 @@ export default function RiddleRush() {
           <p className="text-center text-neutral-500">No riddle found for today.</p>
         )}
 
-        {!loading && riddle && !name && (
-          <div className="bg-neutral-950 border-2 border-pink-500 rounded-2xl p-6 mb-6">
-            <p className="text-sm text-neutral-400 mb-3">Enter your name to play:</p>
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Your name"
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white mb-3 outline-none focus:border-pink-500"
-            />
-            <button
-              onClick={saveName}
-              className="w-full bg-pink-500 hover:bg-pink-600 transition rounded-lg py-3 font-semibold"
-            >
-              Start playing
-            </button>
-          </div>
-        )}
-
-        {!loading && riddle && name && (
+        {!loading && riddle && (
           <div className="bg-neutral-950 border-2 border-pink-500 rounded-2xl p-6 mb-6 shadow-lg hover:shadow-pink-500/30 transition">
             <p className="text-lg leading-relaxed mb-4">{riddle.riddle_text}</p>
 
@@ -273,7 +239,7 @@ export default function RiddleRush() {
 
             <div className="mt-3 flex justify-between items-center text-xs text-neutral-500">
               <span>
-                Playing as <span className="text-pink-400">{name}</span>
+                Playing as <span className="text-pink-400">{player.name}</span>
                 {locked && solved && ` · +${pointsEarned} pts`}
               </span>
               <button onClick={switchPlayer} className="underline hover:text-white">

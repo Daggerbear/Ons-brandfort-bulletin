@@ -11,11 +11,23 @@ const games = [
     color: "cyan",
   },
   {
+    name: "♟️ Chess",
+    desc: "Classic 1v1 chess. Play against a friend in real-time.",
+    href: "/games/chess",
+    color: "green",
+  },
+  {
     name: "🔢 Sudoku",
     desc: "Classic number puzzle. Three difficulty levels.",
     href: "/games/sudoku",
     color: "purple",
   },
+  {
+  name: "🔴 Checkers",
+  desc: "Classic 1v1 checkers. Play against a friend in real-time.",
+  href: "/games/checkers",
+  color: "red",
+},
   {
     name: "🧩 Riddle Rush",
     desc: "One riddle a day. 3 tries, monthly leaderboard.",
@@ -28,6 +40,8 @@ const colorMap = {
   cyan: "border-cyan-500 hover:shadow-cyan-500/50 text-cyan-400",
   purple: "border-purple-500 hover:shadow-purple-500/50 text-purple-400",
   pink: "border-pink-500 hover:shadow-pink-500/50 text-pink-400",
+  green: "border-green-500 hover:shadow-green-500/50 text-green-400",
+  red: "border-red-500 hover:shadow-red-500/50 text-red-400",
 };
 
 export default async function GamesHome() {
