@@ -8,18 +8,25 @@ export default function BusinessDetail() {
   const { id } = useParams();
   const [lang, setLang] = useState("af");
   const [business, setBusiness] = useState(null);
+  const [menuEnabled, setMenuEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBusiness = async () => {
-      const { data, error } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (!error) setBusiness(data);
+      const [businessResult, menuResult] = await Promise.all([
+        supabase.from("businesses").select("*").eq("id", id).single(),
+        supabase
+          .from("business_menu_settings")
+          .select("menu_enabled")
+          .eq("business_id", id)
+          .maybeSingle(),
+      ]);
+
+      if (!businessResult.error) setBusiness(businessResult.data);
+      setMenuEnabled(menuResult.data?.menu_enabled === true);
       setLoading(false);
     };
+
     if (id) fetchBusiness();
   }, [id]);
 
@@ -30,6 +37,7 @@ export default function BusinessDetail() {
       hours: "Ure",
       contact: "Kontak",
       whatsapp: "Stuur WhatsApp",
+      menu: "Sien ons spyskaart",
       notFound: "Besigheid nie gevind nie.",
     },
     en: {
@@ -38,13 +46,14 @@ export default function BusinessDetail() {
       hours: "Hours",
       contact: "Contact",
       whatsapp: "Message on WhatsApp",
+      menu: "View our menu",
       notFound: "Business not found.",
     },
   };
 
   const t = text[lang];
 
-  const getWhatsappLink = (contact, businessName) => {
+  const getWhatsappLink = (contact) => {
     if (!contact) return null;
     const match = contact.match(/0\d[\d\s]{7,}/);
     if (!match) return null;
@@ -54,8 +63,8 @@ export default function BusinessDetail() {
 
     const message =
       lang === "af"
-        ? `Hi, ek het jou op Ons Brandfort Bulletin gekry! Ek wil navrae doen oor `
-        : `Hi, I found you on Ons Brandfort Bulletin! I'd like to enquire about `;
+        ? "Hi, ek het jou op Ons Brandfort Bulletin gekry! Ek wil navrae doen oor "
+        : "Hi, I found you on Ons Brandfort Bulletin! I'd like to enquire about ";
 
     return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
   };
@@ -75,7 +84,10 @@ export default function BusinessDetail() {
         <Nav lang={lang} />
         <div className="max-w-md mx-auto mt-20 text-center">
           <p className="text-neutral-400 mb-6">{t.notFound}</p>
-          <a href="/" className="text-orange-400 hover:text-orange-300 underline">
+          <a
+            href="/"
+            className="text-orange-400 hover:text-orange-300 underline"
+          >
             {t.back}
           </a>
         </div>
@@ -83,7 +95,7 @@ export default function BusinessDetail() {
     );
   }
 
-  const whatsappLink = getWhatsappLink(business.contact, business.name);
+  const whatsappLink = getWhatsappLink(business.contact);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
@@ -107,9 +119,10 @@ export default function BusinessDetail() {
         <span className="inline-block text-xs uppercase tracking-wide text-orange-400 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
           {business.category}
         </span>
-
         <h1 className="text-3xl font-bold mb-4">{business.name}</h1>
-        <p className="text-neutral-300 mb-6 leading-relaxed">{business.description}</p>
+        <p className="text-neutral-300 mb-6 leading-relaxed">
+          {business.description}
+        </p>
 
         <div className="space-y-3 mb-8 border-t border-neutral-800 pt-6">
           {business.address && (
@@ -132,6 +145,15 @@ export default function BusinessDetail() {
           )}
         </div>
 
+{menuEnabled && (
+ <a
+ href={`/business/${business.id}/menu`}
+ className="block w-full text-center bg-orange-500 hover:bg-orange-600 transition text-white font-semibold rounded-lg px-4 py-3 mb-3"
+ >
+ {t.menu}
+ </a>
+)}
+
         {whatsappLink && (
           <a
             href={whatsappLink}
@@ -143,7 +165,10 @@ export default function BusinessDetail() {
           </a>
         )}
 
-        <a href="/" className="block text-center text-neutral-400 hover:text-white underline">
+        <a
+          href="/"
+          className="block text-center text-neutral-400 hover:text-white underline"
+        >
           {t.back}
         </a>
       </div>

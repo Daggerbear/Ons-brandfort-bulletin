@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -7,6 +8,7 @@ export default function AdminBusinesses() {
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
   const [businesses, setBusinesses] = useState([]);
+  const [menuStates, setMenuStates] = useState({});
   const [loading, setLoading] = useState(false);
   const [uploadingId, setUploadingId] = useState(null);
 
@@ -19,11 +21,24 @@ export default function AdminBusinesses() {
 
   const loadData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("businesses")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setBusinesses(data || []);
+
+    const [businessesResult, menuSettingsResult] = await Promise.all([
+      supabase
+        .from("businesses")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("business_menu_settings")
+        .select("business_id, menu_enabled"),
+    ]);
+
+    setBusinesses(businessesResult.data || []);
+
+    const nextMenuStates = {};
+    (menuSettingsResult.data || []).forEach((setting) => {
+      nextMenuStates[setting.business_id] = setting.menu_enabled;
+    });
+    setMenuStates(nextMenuStates);
     setLoading(false);
   };
 
@@ -32,11 +47,17 @@ export default function AdminBusinesses() {
   }, [authenticated]);
 
   const updateBusiness = async (id, field, value) => {
-    await supabase.from("businesses").update({ [field]: value }).eq("id", id);
+    await supabase
+      .from("businesses")
+      .update({ [field]: value })
+      .eq("id", id);
   };
 
   const approveBusiness = async (id) => {
-    await supabase.from("businesses").update({ Status: "approved" }).eq("id", id);
+    await supabase
+      .from("businesses")
+      .update({ Status: "approved" })
+      .eq("id", id);
     loadData();
   };
 
@@ -77,7 +98,11 @@ export default function AdminBusinesses() {
     return (
       <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
         <p className="text-neutral-400">
-          Please <Link href="/admin" className="text-orange-400">log in</Link> first.
+          Please{" "}
+          <Link href="/admin" className="text-orange-400">
+            log in
+          </Link>{" "}
+          first.
         </p>
       </main>
     );
@@ -86,17 +111,49 @@ export default function AdminBusinesses() {
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
       <div className="max-w-2xl mx-auto">
-        <Link href="/admin" className="text-sm text-orange-400 hover:text-orange-300">
+        <Link
+          href="/admin"
+          className="text-sm text-orange-400 hover:text-orange-300"
+        >
           ← Terug na Admin Panel
         </Link>
-        <h1 className="text-3xl font-bold mb-8 mt-4">Businesses</h1>
+        <h1 className="text-3xl font-bold mb-2 mt-4">Businesses</h1>
+        <p className="text-sm text-neutral-400 mb-8">
+          Use <strong className="text-orange-400">Manage menu</strong> on a
+          business card to turn online ordering on or off, edit items and
+          prices, or set collection and delivery.
+        </p>
 
         {loading && <p className="text-neutral-400">Loading...</p>}
 
         <div className="space-y-4">
           {businesses.map((b) => (
-            <div key={b.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-              <label className="block text-xs text-neutral-500 mb-1">Logo</label>
+            <div
+              key={b.id}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">
+                    Online menu
+                  </p>
+                  <p
+                    className={`text-sm font-semibold mt-1 ${menuStates[b.id] ? "text-green-400" : "text-neutral-400"}`}
+                  >
+                    {menuStates[b.id] ? "Live" : "Not enabled"}
+                  </p>
+                </div>
+                <Link
+                  href={`/admin/businesses/${b.id}/menu`}
+                  className="shrink-0 bg-orange-500 hover:bg-orange-600 transition text-white rounded-lg px-3 py-2 text-sm font-semibold"
+                >
+                  Manage menu
+                </Link>
+              </div>
+
+              <label className="block text-xs text-neutral-500 mb-1">
+                Logo
+              </label>
               <div className="flex items-center gap-3 mb-2">
                 {b.logo_url ? (
                   <img
@@ -121,46 +178,72 @@ export default function AdminBusinesses() {
                 </label>
               </div>
 
-              <label className="block text-xs text-neutral-500 mb-1">Name</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Name
+              </label>
               <input
                 defaultValue={b.name}
                 onBlur={(e) => updateBusiness(b.id, "name", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <label className="block text-xs text-neutral-500 mb-1">Category</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Category
+              </label>
               <input
                 defaultValue={b.category}
                 onBlur={(e) => updateBusiness(b.id, "category", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <label className="block text-xs text-neutral-500 mb-1">Description</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Description
+              </label>
               <textarea
                 defaultValue={b.description}
-                onBlur={(e) => updateBusiness(b.id, "description", e.target.value)}
+                onBlur={(e) =>
+                  updateBusiness(b.id, "description", e.target.value)
+                }
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <label className="block text-xs text-neutral-500 mb-1">Contact</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Contact
+              </label>
               <input
                 defaultValue={b.contact}
                 onBlur={(e) => updateBusiness(b.id, "contact", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <label className="block text-xs text-neutral-500 mb-1">Address</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Address
+              </label>
               <input
                 defaultValue={b.address}
                 onBlur={(e) => updateBusiness(b.id, "address", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <label className="block text-xs text-neutral-500 mb-1">Hours</label>
+              <label className="block text-xs text-neutral-500 mb-1">
+                Hours
+              </label>
               <input
                 defaultValue={b.hours}
                 onBlur={(e) => updateBusiness(b.id, "hours", e.target.value)}
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
-              <p className="text-sm text-neutral-400 mb-2">Status: {b.Status}</p>
+              <p className="text-sm text-neutral-400 mb-2">
+                Status: {b.Status}
+              </p>
               <div className="flex gap-2">
-                <button onClick={() => approveBusiness(b.id)} className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">Approve</button>
-                <button onClick={() => rejectBusiness(b.id)} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">Reject / Delete</button>
+                <button
+                  onClick={() => approveBusiness(b.id)}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => rejectBusiness(b.id)}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm"
+                >
+                  Reject / Delete
+                </button>
               </div>
             </div>
           ))}

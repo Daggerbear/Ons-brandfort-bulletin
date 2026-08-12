@@ -67,7 +67,11 @@ export default function Admin() {
   }
 
   const sections = [
-    { name: "Businesses", href: "/admin/businesses", desc: "Approve, edit, or reject business listings" },
+    {
+      name: "Businesses",
+      href: "/admin/businesses",
+      desc: "Approve, edit, or reject listings — manage each business menu from its card",
+    },
     { name: "Events", href: "/admin/events", desc: "Approve, edit, or reject events" },
     { name: "Gemeenskap Feed", href: "/admin/feed", desc: "Delete flagged or reported posts" },
     { name: "Sponsored Ads", href: "/admin/ads", desc: "Add, edit, or remove sponsored flyer ads" },
@@ -83,10 +87,7 @@ export default function Admin() {
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <button
-            onClick={logout}
-            className="text-sm text-neutral-500 hover:text-orange-400"
-          >
+          <button onClick={logout} className="text-sm text-neutral-500 hover:text-orange-400">
             Log out
           </button>
         </div>

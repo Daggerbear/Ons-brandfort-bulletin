@@ -1,0 +1,543 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import Nav from "@/components/Nav";
+
+const money = (amount) => `R${Number(amount || 0).toFixed(2)}`;
+
+const labels = {
+  af: {
+    back: "Terug na besigheid",
+    cart: "Jou bestelling",
+    empty: "Jou mandjie is nog leeg.",
+    add: "Voeg by",
+    all: "Alles",
+    chooseCategory: "Kies kategorie",
+    collection: "Afhaal",
+    delivery: "Aflewering",
+    name: "Jou naam",
+    namePlaceholder: "Tik jou naam hier",
+    address: "Afleweringsadres",
+    addressPlaceholder: "Tik jou adres hier",
+    notePlaceholder: "Spesiale versoek (opsioneel)",
+    payment: "Betaalmetode",
+    cash: "Kontant",
+    card: "Kaart",
+    choosePayment: "Kies asseblief kontant of kaart.",
+    order: "Bestel op WhatsApp",
+    unavailable: "Aanlyn bestellings is tans nie beskikbaar nie.",
+    noItems: "Geen beskikbare items in hierdie kategorie nie.",
+    noOrderType: "Geen bestelmetode is tans beskikbaar nie.",
+    addItems: "Voeg ten minste een item by jou bestelling.",
+  },
+  en: {
+    back: "Back to business",
+    cart: "Your order",
+    empty: "Your cart is empty.",
+    add: "Add",
+    all: "All",
+    chooseCategory: "Choose a category",
+    collection: "Collection",
+    delivery: "Delivery",
+    name: "Your name",
+    namePlaceholder: "Enter your name",
+    address: "Delivery address",
+    addressPlaceholder: "Enter your address",
+    notePlaceholder: "Special request (optional)",
+    payment: "Payment method",
+    cash: "Cash",
+    card: "Card",
+    choosePayment: "Please choose cash or card.",
+    order: "Order on WhatsApp",
+    unavailable: "Online ordering is currently unavailable.",
+    noItems: "No available items in this category.",
+    noOrderType: "No order method is currently available.",
+    addItems: "Add at least one item to your order.",
+  },
+};
+
+export default function BusinessMenuPage() {
+  const { id } = useParams();
+  const [lang, setLang] = useState("af");
+  const [business, setBusiness] = useState(null);
+  const [settings, setSettings] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [customerName, setCustomerName] = useState("");
+  const [orderType, setOrderType] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [address, setAddress] = useState("");
+  const [note, setNote] = useState("");
+
+  const t = labels[lang];
+
+  useEffect(() => {
+    if (!id) return;
+
+    const loadMenu = async () => {
+      setLoading(true);
+      const [businessResult, settingsResult, categoriesResult, itemsResult] =
+        await Promise.all([
+          supabase
+            .from("businesses")
+            .select("id, name, description, address, hours, contact, logo_url")
+            .eq("id", id)
+            .maybeSingle(),
+          supabase
+            .from("business_menu_settings")
+            .select("*")
+            .eq("business_id", id)
+            .maybeSingle(),
+          supabase
+            .from("menu_categories")
+            .select("*")
+            .eq("business_id", id)
+            .eq("is_active", true)
+            .order("sort_order"),
+          supabase
+            .from("menu_items")
+            .select("*")
+            .eq("business_id", id)
+            .eq("is_available", true)
+            .order("sort_order"),
+        ]);
+
+      setBusiness(businessResult.data || null);
+      setSettings(settingsResult.data || null);
+      setCategories(categoriesResult.data || []);
+      setItems(itemsResult.data || []);
+
+      if (settingsResult.data?.collection_enabled) setOrderType("collection");
+      else if (settingsResult.data?.delivery_enabled) setOrderType("delivery");
+
+      setLoading(false);
+    };
+
+    loadMenu();
+  }, [id]);
+
+  const groupedMenu = useMemo(() => {
+    if (activeCategory !== "all") {
+      const category = categories.find((entry) => entry.id === activeCategory);
+      const categoryItems = items.filter(
+        (item) => item.category_id === activeCategory,
+      );
+      return category ? [{ ...category, items: categoryItems }] : [];
+    }
+
+    const grouped = categories
+      .map((category) => ({
+        ...category,
+        items: items.filter((item) => item.category_id === category.id),
+      }))
+      .filter((category) => category.items.length > 0);
+
+    const uncategorised = items.filter((item) => !item.category_id);
+    if (uncategorised.length) {
+      grouped.push({
+        id: "uncategorised",
+        name: lang === "af" ? "Ander" : "Other",
+        items: uncategorised,
+      });
+    }
+
+    return grouped;
+  }, [activeCategory, categories, items, lang]);
+
+  const itemsById = useMemo(
+    () => Object.fromEntries(items.map((item) => [item.id, item])),
+    [items],
+  );
+
+  const cartItems = Object.entries(cart)
+    .filter(([, quantity]) => quantity > 0)
+    .map(([itemId, quantity]) => ({ ...itemsById[itemId], quantity }))
+    .filter((item) => item.id);
+
+  const total = cartItems.reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity,
+    0,
+  );
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const canOrder = settings?.collection_enabled || settings?.delivery_enabled;
+
+  const changeQuantity = (itemId, change) => {
+    setCart((current) => {
+      const quantity = Math.max(0, (current[itemId] || 0) + change);
+      const next = { ...current };
+      if (quantity) next[itemId] = quantity;
+      else delete next[itemId];
+      return next;
+    });
+  };
+
+  const placeOrder = () => {
+    if (!cartItems.length) return window.alert(t.addItems);
+    if (!paymentMethod) return window.alert(t.choosePayment);
+
+    const digits = (
+      settings?.whatsapp_number ||
+      business?.contact ||
+      ""
+    ).replace(/\D/g, "");
+    if (!digits) {
+      return window.alert("No WhatsApp number has been set for this menu yet.");
+    }
+
+    const number = digits.startsWith("0") ? `27${digits.slice(1)}` : digits;
+    const orderLines = cartItems.map(
+      (item) =>
+        `• ${item.quantity} × ${item.name} — ${money(Number(item.price) * item.quantity)}`,
+    );
+    const typeLabel = orderType === "delivery" ? t.delivery : t.collection;
+    const paymentLabel = paymentMethod === "cash" ? t.cash : t.card;
+
+    const message = [
+      `Hi ${business?.name || ""}, I would like to place an order:`,
+      "",
+      ...orderLines,
+      "",
+      `*Total: ${money(total)}*`,
+      "",
+      `Name: ${customerName.trim() || "Not provided"}`,
+      `Order type: ${typeLabel}`,
+      `Payment: ${paymentLabel}`,
+      ...(orderType === "delivery"
+        ? [`Address: ${address.trim() || "To be confirmed"}`]
+        : []),
+      ...(note.trim() ? [`Special request: ${note.trim()}`] : []),
+      "",
+      "Please confirm my order and collection/delivery time. Thank you!",
+    ];
+
+    window.open(
+      `https://wa.me/${number}?text=${encodeURIComponent(message.join("\n"))}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
+        <Nav lang={lang} />
+        <p className="text-neutral-400 text-center mt-20">Loading menu…</p>
+      </main>
+    );
+  }
+
+  if (!business || !settings?.menu_enabled) {
+    return (
+      <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
+        <Nav lang={lang} />
+        <div className="max-w-md mx-auto text-center mt-20">
+          <p className="text-neutral-400 mb-6">{t.unavailable}</p>
+          <a href={`/business/${id}`} className="text-orange-400 underline">
+            ← {t.back}
+          </a>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-neutral-950 text-white px-4 py-6 sm:px-6 sm:py-10">
+      <Nav lang={lang} />
+      <div className="max-w-3xl mx-auto mt-6 pb-10">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <a
+            href={`/business/${id}`}
+            className="text-sm text-neutral-400 hover:text-orange-400 transition underline"
+          >
+            ← {t.back}
+          </a>
+          <button
+            onClick={() => setLang(lang === "af" ? "en" : "af")}
+            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
+          >
+            {lang === "af" ? "English" : "Afrikaans"}
+          </button>
+        </div>
+
+        <section className="rounded-3xl overflow-hidden border border-purple-500/40 bg-gradient-to-br from-purple-950 via-neutral-950 to-neutral-900 p-6 sm:p-8 mb-5">
+          <div className="flex items-start gap-4">
+            {business.logo_url ? (
+              <img
+                src={business.logo_url}
+                alt={`${business.name} logo`}
+                className="shrink-0 h-16 w-16 rounded-2xl object-cover bg-white p-1 shadow-lg"
+              />
+            ) : (
+              <div className="shrink-0 h-16 w-16 rounded-2xl bg-white text-purple-800 flex items-center justify-center text-2xl font-black shadow-lg">
+                {business.name?.slice(0, 1)}
+              </div>
+            )}
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-2">
+                Online Menu
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+                {business.name}
+              </h1>
+              {(settings.order_notice || business.description) && (
+                <p className="text-neutral-300 mt-2">
+                  {settings.order_notice || business.description}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-sm">
+            {business.hours && (
+              <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
+                {business.hours}
+              </div>
+            )}
+            {business.address && (
+              <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
+                {business.address}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {canOrder && (
+          <section className="mb-5 rounded-2xl border border-orange-500/40 bg-neutral-900 overflow-hidden shadow-lg">
+            <button
+              onClick={() => setCartOpen(!cartOpen)}
+              className="w-full flex items-center justify-between gap-4 px-4 py-4 text-left hover:bg-neutral-800 transition"
+              aria-expanded={cartOpen}
+            >
+              <div>
+                <h2 className="font-bold">
+                  {t.cart} {cartCount ? `(${cartCount})` : ""}
+                </h2>
+                <p className="text-sm text-neutral-400">
+                  {cartItems.length
+                    ? `${cartItems.length} item type${cartItems.length === 1 ? "" : "s"}`
+                    : t.empty}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <p className="text-xl font-black text-orange-400">
+                  {money(total)}
+                </p>
+                <span className="text-orange-400 text-xl">
+                  {cartOpen ? "⌃" : "⌄"}
+                </span>
+              </div>
+            </button>
+
+            {cartOpen && (
+              <div className="border-t border-neutral-800 p-4 sm:p-5">
+                {cartItems.length > 0 && (
+                  <div className="border-b border-neutral-800 pb-3 mb-4 max-h-40 overflow-y-auto space-y-2">
+                    {cartItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm gap-4"
+                      >
+                        <span className="text-neutral-300">
+                          {item.quantity} × {item.name}
+                        </span>
+                        <span className="text-white whitespace-nowrap">
+                          {money(Number(item.price) * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder={t.namePlaceholder}
+                    aria-label={t.name}
+                    className="w-full rounded-xl bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none px-4 py-3 text-white placeholder:text-neutral-500"
+                  />
+                  <div
+                    className={`grid rounded-xl border border-neutral-700 overflow-hidden ${settings.collection_enabled && settings.delivery_enabled ? "grid-cols-2" : "grid-cols-1"}`}
+                  >
+                    {settings.collection_enabled && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderType("collection")}
+                        className={`py-3 font-semibold text-sm transition ${orderType === "collection" ? "bg-orange-500 text-white" : "bg-neutral-800 text-neutral-300"}`}
+                      >
+                        {t.collection}
+                      </button>
+                    )}
+                    {settings.delivery_enabled && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderType("delivery")}
+                        className={`py-3 font-semibold text-sm transition ${orderType === "delivery" ? "bg-orange-500 text-white" : "bg-neutral-800 text-neutral-300"}`}
+                      >
+                        {t.delivery}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <p className="text-sm font-semibold text-neutral-300 mb-2">
+                    {t.payment}
+                  </p>
+                  <div className="grid grid-cols-2 rounded-xl border border-neutral-700 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("cash")}
+                      className={`py-3 font-semibold text-sm transition ${paymentMethod === "cash" ? "bg-orange-500 text-white" : "bg-neutral-800 text-neutral-300"}`}
+                    >
+                      {t.cash}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`py-3 font-semibold text-sm transition ${paymentMethod === "card" ? "bg-orange-500 text-white" : "bg-neutral-800 text-neutral-300"}`}
+                    >
+                      {t.card}
+                    </button>
+                  </div>
+                </div>
+
+                {orderType === "delivery" && (
+                  <textarea
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    placeholder={t.addressPlaceholder}
+                    aria-label={t.address}
+                    rows={2}
+                    className="w-full mt-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none px-4 py-3 text-white placeholder:text-neutral-500 resize-none"
+                  />
+                )}
+
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder={t.notePlaceholder}
+                  rows={2}
+                  className="w-full mt-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none px-4 py-3 text-white placeholder:text-neutral-500 resize-none"
+                />
+
+                {(orderType === "delivery"
+                  ? settings.delivery_note
+                  : settings.collection_note) && (
+                  <p className="text-xs text-neutral-500 mt-2">
+                    {orderType === "delivery"
+                      ? settings.delivery_note
+                      : settings.collection_note}
+                  </p>
+                )}
+
+                <button
+                  onClick={placeOrder}
+                  disabled={!cartItems.length}
+                  className="w-full mt-4 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition py-4 font-bold text-white"
+                >
+                  {t.order} · {money(total)}
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {!canOrder && (
+          <p className="mb-5 text-sm text-neutral-400">{t.noOrderType}</p>
+        )}
+
+        <div className="mb-7">
+          <p className="text-sm font-semibold text-neutral-300 mb-2">
+            {t.chooseCategory}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveCategory("all")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${activeCategory === "all" ? "bg-orange-500 text-white" : "bg-neutral-900 border border-neutral-700 text-neutral-300"}`}
+            >
+              {t.all}
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${activeCategory === category.id ? "bg-orange-500 text-white" : "bg-neutral-900 border border-neutral-700 text-neutral-300"}`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {groupedMenu.length === 0 && (
+            <p className="text-neutral-400">{t.noItems}</p>
+          )}
+          {groupedMenu.map((category) => (
+            <section key={category.id}>
+              <h2 className="text-2xl font-bold text-orange-400">
+                {category.name}
+              </h2>
+              <div className="grid gap-3 mt-4 sm:grid-cols-2">
+                {category.items.map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-4 flex gap-3 justify-between"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-white">{item.name}</h3>
+                      {item.description && (
+                        <p className="text-sm text-neutral-400 mt-1 leading-snug">
+                          {item.description}
+                        </p>
+                      )}
+                      <p className="text-orange-400 font-bold mt-3">
+ {money(item.price)}
+ </p>
+ </div>
+ {canOrder &&
+ (cart[item.id] ? (
+ <div className="shrink-0 flex items-center self-end rounded-lg border border-orange-500/50 overflow-hidden">
+ <button
+ type="button"
+ onClick={() => changeQuantity(item.id, -1)}
+ className="px-3 py-2 hover:bg-neutral-800 text-lg"
+ >
+ −
+ </button>
+ <span className="min-w-8 text-center font-bold">
+ {cart[item.id]}
+ </span>
+ <button
+ type="button"
+ onClick={() => changeQuantity(item.id, 1)}
+ className="px-3 py-2 hover:bg-orange-500 text-lg"
+ >
+ +
+ </button>
+ </div>
+ ) : (
+ <button
+ type="button"
+ onClick={() => changeQuantity(item.id, 1)}
+ className="shrink-0 self-end rounded-lg bg-orange-500 hover:bg-orange-600 transition px-3 py-2 font-semibold text-sm"
+ >
+ + {t.add}
+ </button>
+ ))}
+ </article>
+ ))}
+ </div>
+ </section>
+ ))}
+ </div>
+ </div>
+ </main>
+ );
+}
