@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
+import Image from "next/image";
 
 const categories = [
   { value: "all", af: "Alles", en: "All" },
@@ -241,9 +242,11 @@ export default function Feed() {
                   {lang === "af" ? "Geborg" : "Sponsored"}
                 </span>
                 <p className="font-semibold mb-2">{item.data.business_name}</p>
-                <img
+                <Image
                   src={item.data.image_url}
                   alt={item.data.business_name}
+                  width={800}
+                  height={400}
                   className="rounded-lg w-full object-cover"
                 />
               </Link>
@@ -266,9 +269,11 @@ export default function Feed() {
                 <p className="text-gray-200 mb-3">{item.data.content}</p>
 
                 {item.data.image_url && (
-                  <img
+                  <Image
                     src={item.data.image_url}
                     alt=""
+                    width={800}
+                    height={400}
                     className="rounded-lg mb-3 w-full object-cover"
                   />
                 )}

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Besighede() {
   const [lang, setLang] = useState("af");
@@ -76,7 +77,13 @@ export default function Besighede() {
               className="flex gap-4 bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-orange-500 transition"
             >
               {business.logo_url ? (
-                <img src={business.logo_url} alt={`${business.name} logo`} className="w-14 h-14 object-cover rounded-lg border border-neutral-800 flex-shrink-0" />
+                <Image
+                  src={business.logo_url}
+                  alt={`${business.name} logo`}
+                  width={56}
+                  height={56}
+                  className="w-14 h-14 object-cover rounded-lg border border-neutral-800 flex-shrink-0"
+                />
               ) : (
                 <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
               )}

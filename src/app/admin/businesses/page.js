@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AdminBusinesses() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -156,9 +157,11 @@ export default function AdminBusinesses() {
               </label>
               <div className="flex items-center gap-3 mb-2">
                 {b.logo_url ? (
-                  <img
+                  <Image
                     src={b.logo_url}
                     alt={`${b.name} logo`}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded-lg border border-neutral-800"
                   />
                 ) : (

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
+import Image from "next/image";
 
 export default function BusinessDetail() {
   const { id } = useParams();
@@ -109,9 +110,11 @@ export default function BusinessDetail() {
         </button>
 
         {business.logo_url && (
-          <img
+          <Image
             src={business.logo_url}
             alt={`${business.name} logo`}
+            width={96}
+            height={96}
             className="w-24 h-24 object-cover rounded-xl border border-neutral-800 mb-4"
           />
         )}
