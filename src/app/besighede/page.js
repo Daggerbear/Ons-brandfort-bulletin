@@ -9,10 +9,11 @@ export default function Besighede() {
   const [lang, setLang] = useState("af");
   const [businesses, setBusinesses] = useState([]);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const text = {
-    af: { title: "🏪 Ons Besighede" },
-    en: { title: "🏪 Our Businesses" },
+    af: { title: "🏪 Ons Besighede", search: "Soek besighede..." },
+    en: { title: "🏪 Our Businesses", search: "Search businesses..." },
   };
   const t = text[lang];
 
@@ -34,8 +35,14 @@ export default function Besighede() {
     "Retail & Shopping", "Other",
   ];
 
-  const filteredBusinesses =
-    activeCategory === "All" ? businesses : businesses.filter((b) => b.category === activeCategory);
+  const filteredBusinesses = businesses
+    .filter((b) => activeCategory === "All" || b.category === activeCategory)
+    .filter((b) =>
+      searchTerm.trim() === ""
+        ? true
+        : b.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          b.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -53,6 +60,14 @@ export default function Besighede() {
       </header>
 
       <section className="px-6 py-8 max-w-2xl mx-auto">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={t.search}
+          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 mb-4 text-white placeholder-neutral-500 focus:border-orange-500 outline-none"
+        />
+
         <div className="flex flex-wrap gap-2 mb-6">
           {categories.map((cat) => (
             <button

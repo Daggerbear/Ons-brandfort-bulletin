@@ -13,12 +13,23 @@ export default function Home() {
   const [lang, setLang] = useState("af");
   const [events, setEvents] = useState([]);
   const [heroUrl, setHeroUrl] = useState(null);
+  const [siteReviews, setSiteReviews] = useState([]);
+  const [reviewName, setReviewName] = useState("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const text = {
     af: {
       tagline: "Die hart van Brandfort, op een plek.",
       events: "🔥 Wat Gebeur",
       footer: "Gebou deur Jaco du Plessis — vir Brandfort, deur Brandfort.",
+      siteReviewsTitle: "Wat Sê Brandfort",
+      noSiteReviews: "Nog geen resensies nie. Wees die eerste!",
+      yourName: "Jou naam (opsioneel)",
+      yourComment: "Skryf 'n resensie...",
+      submit: "Plaas Resensie",
+      submitting: "Stuur...",
       cards: [
         { title: "🏪 Ons Besighede", desc: "Deurblaai plaaslike besighede volgens kategorie.", href: "/besighede" },
         { title: "💬 Gemeenskap Feed", desc: "Vra vrae, deel nuus, gee shoutouts — alles op een plek.", href: "/feed" },
@@ -32,6 +43,12 @@ export default function Home() {
       tagline: "The heart of Brandfort, in one place.",
       events: "🔥 What's Happening",
       footer: "Built by Jaco du Plessis — for Brandfort, by Brandfort.",
+      siteReviewsTitle: "What Brandfort Says",
+      noSiteReviews: "No reviews yet. Be the first!",
+      yourName: "Your name (optional)",
+      yourComment: "Write a review...",
+      submit: "Post Review",
+      submitting: "Posting...",
       cards: [
         { title: "🏪 Our Businesses", desc: "Browse local businesses by category.", href: "/besighede" },
         { title: "💬 Community Feed", desc: "Ask questions, share news, give shoutouts — all in one place.", href: "/feed" },
@@ -60,9 +77,44 @@ export default function Home() {
         .eq("id", 1)
         .single();
       setHeroUrl(settingsData?.hero_image_url || null);
+
+      fetchSiteReviews();
     };
     loadData();
   }, []);
+
+  const fetchSiteReviews = async () => {
+    const { data } = await supabase
+      .from("site_reviews")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setSiteReviews(data || []);
+  };
+
+  const handleReviewSubmit = async () => {
+    if (reviewRating === 0) return;
+    setSubmittingReview(true);
+
+    const { error } = await supabase.from("site_reviews").insert({
+      name: reviewName.trim() || null,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null,
+    });
+
+    setSubmittingReview(false);
+
+    if (!error) {
+      setReviewName("");
+      setReviewRating(0);
+      setReviewComment("");
+      fetchSiteReviews();
+    }
+  };
+
+  const averageSiteRating =
+    siteReviews.length > 0
+      ? (siteReviews.reduce((sum, r) => sum + r.rating, 0) / siteReviews.length).toFixed(1)
+      : null;
 
   return (
     <main className="min-h-screen bg-carbon text-white">
@@ -167,6 +219,82 @@ export default function Home() {
         <a href="/list-your-event" className="w-full text-center border border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white transition font-semibold rounded-lg px-4 py-3">
           {lang === "af" ? "Lys Jou Gebeurtenis" : "List Your Event"}
         </a>
+      </section>
+
+      {/* Site Reviews */}
+      <section className="px-6 py-10 max-w-2xl mx-auto border-t border-neutral-800">
+        <div className="flex items-center gap-3 mb-5">
+          <h2 className="text-2xl font-bold">{t.siteReviewsTitle}</h2>
+          {averageSiteRating && (
+            <span className="text-sm text-neutral-400">
+              <span className="text-yellow-400">
+                {"★".repeat(Math.round(averageSiteRating))}
+                {"☆".repeat(5 - Math.round(averageSiteRating))}
+              </span>{" "}
+              {averageSiteRating} ({siteReviews.length})
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 mb-6 bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => setReviewRating(star)}
+                className={`text-2xl ${
+                  star <= reviewRating ? "text-yellow-400" : "text-neutral-600"
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder={t.yourName}
+            value={reviewName}
+            onChange={(e) => setReviewName(e.target.value)}
+            className="bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white"
+          />
+          <textarea
+            placeholder={t.yourComment}
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+            rows={2}
+            className="bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white"
+          />
+          <button
+            onClick={handleReviewSubmit}
+            disabled={reviewRating === 0 || submittingReview}
+            className="self-end bg-orange-500 hover:bg-orange-600 transition text-white text-sm font-semibold rounded-lg px-4 py-2 disabled:opacity-50"
+          >
+            {submittingReview ? t.submitting : t.submit}
+          </button>
+        </div>
+
+        {siteReviews.length === 0 && (
+          <p className="text-neutral-500 text-sm">{t.noSiteReviews}</p>
+        )}
+
+        <div className="space-y-3">
+          {siteReviews.map((r) => (
+            <div key={r.id} className="border-b border-neutral-900 pb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-yellow-400 text-sm">
+                  {"★".repeat(r.rating)}
+                  {"☆".repeat(5 - r.rating)}
+                </span>
+                {r.name && (
+                  <span className="text-sm text-neutral-400">{r.name}</span>
+                )}
+              </div>
+              {r.comment && (
+                <p className="text-neutral-300 text-sm">{r.comment}</p>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
 
       <Footer lang={lang} />
