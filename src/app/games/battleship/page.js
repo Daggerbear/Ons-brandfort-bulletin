@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredPlayer, clearStoredPlayer } from "@/lib/playerAuth";
+import { trackOnlinePlayers } from "@/lib/presence";
 import {
   findAndClaimWaitingOpponent,
   createQueueEntry,
@@ -29,6 +30,7 @@ export default function BattleshipHome() {
   const [queueId, setQueueId] = useState(null);
   const [error, setError] = useState("");
   const [showHelp, setShowHelp] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
   const unsubRef = useRef(null);
 
   useEffect(() => {
@@ -36,6 +38,11 @@ export default function BattleshipHome() {
     return () => {
       if (unsubRef.current) unsubRef.current();
     };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = trackOnlinePlayers("battleship", setOnlineCount);
+    return unsubscribe;
   }, []);
 
   function switchPlayer() {
@@ -215,12 +222,23 @@ export default function BattleshipHome() {
         ) : (
           <>
             <button
+              onClick={() => router.push("/games/battleship/ai")}
+              className="w-full bg-green-600 hover:bg-green-700 transition text-white font-semibold rounded-lg px-4 py-3 mb-4"
+            >
+              🤖 Play Against AI
+            </button>
+
+            <button
               onClick={handleRandomOpponent}
               disabled={loading}
-              className="w-full bg-purple-600 hover:bg-purple-700 transition text-white font-semibold rounded-lg px-4 py-3 mb-4 disabled:opacity-50"
+              className="w-full bg-purple-600 hover:bg-purple-700 transition text-white font-semibold rounded-lg px-4 py-3 mb-2 disabled:opacity-50"
             >
               🎲 Random Opponent
             </button>
+
+            <p className="text-center text-xs text-neutral-500 mb-4">
+              🟢 {onlineCount} player{onlineCount !== 1 ? "s" : ""} online
+            </p>
 
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-neutral-800" />
