@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -75,10 +76,12 @@ export default async function GamesHome() {
 
       <div className="max-w-md mx-auto relative">
         {logoUrl ? (
-          <img
+          <Image
             src={logoUrl}
             alt="Game Room"
-            className="mx-auto mb-1 max-h-24 object-contain"
+            width={300}
+            height={96}
+            className="mx-auto mb-1 max-h-24 w-auto object-contain"
           />
         ) : (
           <h1

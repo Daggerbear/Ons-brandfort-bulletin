@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import Image from "next/image";
 
 const CATEGORIES = {
   af: ["Ander", "Voertuie", "Meubels", "Elektronika", "Klere", "Huishoudelik", "Gereedskap", "Vee"],
@@ -299,11 +300,15 @@ export default function Classifieds() {
               className={`bg-neutral-900 border border-neutral-800 rounded-xl p-4 ${item.is_sold ? "opacity-50" : ""}`}
             >
               {item.image_url && (
-                <img
-                  src={item.image_url}
-                  alt={item.title}
-                  className="w-full max-h-56 object-cover rounded-lg mb-3"
-                />
+                <div className="relative w-full h-56 mb-3">
+                  <Image
+                    src={item.image_url}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 600px"
+                    className="object-cover rounded-lg"
+                  />
+                </div>
               )}
               <div className="flex justify-between items-start">
                 <h2 className="font-semibold text-lg">{item.title}</h2>

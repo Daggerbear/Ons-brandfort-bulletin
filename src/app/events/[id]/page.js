@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -86,7 +87,15 @@ export default function EventDetail() {
 
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden mt-4">
           {event.image_url && (
-            <img src={event.image_url} alt={event.title} className="w-full max-h-[500px] object-contain bg-black" />
+            <div className="relative w-full h-[500px] bg-black">
+              <Image
+                src={event.image_url}
+                alt={event.title}
+                fill
+                sizes="(max-width: 640px) 100vw, 700px"
+                className="object-contain"
+              />
+            </div>
           )}
           <div className="p-6">
             <h1 className="text-2xl font-bold">{event.title}</h1>

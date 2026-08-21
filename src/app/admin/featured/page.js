@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AdminFeatured() {
   const [featured, setFeatured] = useState([]);
@@ -295,11 +296,15 @@ export default function AdminFeatured() {
               </div>
 
               {(item.custom_image_url || item.businesses?.logo_url) && (
-                <img
-                  src={item.custom_image_url || item.businesses?.logo_url}
-                  alt={item.businesses?.name || item.custom_name}
-                  className="rounded-lg mb-3 w-full max-h-40 object-cover"
-                />
+                <div className="relative w-full h-40 mb-3">
+                  <Image
+                    src={item.custom_image_url || item.businesses?.logo_url}
+                    alt={item.businesses?.name || item.custom_name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 600px"
+                    className="object-cover rounded-lg"
+                  />
+                </div>
               )}
 
               <label className="flex items-center justify-center gap-2 bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-2 text-sm text-neutral-300 cursor-pointer mb-3">
