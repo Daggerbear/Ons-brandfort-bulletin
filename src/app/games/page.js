@@ -35,6 +35,12 @@ const games = [
     href: "/games/riddle-rush",
     color: "pink",
   },
+  {
+  name: "🧱 Block Rush",
+  desc: "Classic falling block puzzle. How high can you score?",
+  href: "/games/block-rush",
+  color: "cyan",
+},
 ];
 
 const colorMap = {
