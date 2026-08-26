@@ -1,16 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-const emptyItem = {
-  name: "",
-  description: "",
-  price: "",
-  category_id: "",
-};
+const emptyItem = { name: "", description: "", price: "", category_id: "" };
+const emptyChoice = { name: "", is_required: true, values: "" };
+
+function buildDrafts(groups, values) {
+  return Object.fromEntries(
+    groups.map((group) => [
+      group.id,
+      {
+        name: group.name || "",
+        is_required: group.is_required !== false,
+        values: values
+          .filter((value) => value.option_group_id === group.id)
+          .map((value) =>
+            Number(value.price_adjustment) > 0
+              ? `${value.name} | ${value.price_adjustment}`
+              : value.name,
+          )
+          .join("\n"),
+      },
+    ]),
+  );
+}
+
+function parseValues(raw) {
+  return raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [namePart, pricePart] = line.split("|");
+      const price = Number((pricePart || "").trim().replace(",", "."));
+      return {
+        name: namePart.trim(),
+        price_adjustment: Number.isFinite(price) && price > 0 ? price : 0,
+      };
+    })
+    .filter((value) => value.name);
+}
 
 export default function AdminBusinessMenu() {
   const { id } = useParams();
@@ -20,6 +52,10 @@ export default function AdminBusinessMenu() {
   const [settings, setSettings] = useState(null);
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
+  const [optionGroups, setOptionGroups] = useState([]);
+  const [optionValues, setOptionValues] = useState([]);
+  const [choiceDrafts, setChoiceDrafts] = useState({});
+  const [copyFrom, setCopyFrom] = useState({});
   const [newCategory, setNewCategory] = useState("");
   const [newItem, setNewItem] = useState(emptyItem);
   const [loading, setLoading] = useState(true);
@@ -33,7 +69,7 @@ export default function AdminBusinessMenu() {
 
   const showNotice = (text) => {
     setNotice(text);
-    window.setTimeout(() => setNotice(""), 2500);
+    window.setTimeout(() => setNotice(""), 3000);
   };
 
   const loadMenu = async () => {
@@ -64,10 +100,41 @@ export default function AdminBusinessMenu() {
           .order("sort_order"),
       ]);
 
-    if (businessResult.error) showNotice(businessResult.error.message);
-    if (settingsResult.error) showNotice(settingsResult.error.message);
-    if (categoriesResult.error) showNotice(categoriesResult.error.message);
-    if (itemsResult.error) showNotice(itemsResult.error.message);
+    [businessResult, settingsResult, categoriesResult, itemsResult]
+      .filter((result) => result.error)
+      .forEach((result) => showNotice(result.error.message));
+
+    const loadedItems = itemsResult.data || [];
+    let loadedGroups = [];
+    let loadedValues = [];
+
+    if (loadedItems.length) {
+      const groupsResult = await supabase
+        .from("menu_item_option_groups")
+        .select("*")
+        .in(
+          "menu_item_id",
+          loadedItems.map((item) => item.id),
+        )
+        .order("sort_order");
+
+      if (groupsResult.error) showNotice(groupsResult.error.message);
+      loadedGroups = groupsResult.data || [];
+
+      if (loadedGroups.length) {
+        const valuesResult = await supabase
+          .from("menu_item_option_values")
+          .select("*")
+          .in(
+            "option_group_id",
+            loadedGroups.map((group) => group.id),
+          )
+          .order("sort_order");
+
+        if (valuesResult.error) showNotice(valuesResult.error.message);
+        loadedValues = valuesResult.data || [];
+      }
+    }
 
     setBusiness(businessResult.data || null);
     setSettings(
@@ -84,7 +151,10 @@ export default function AdminBusinessMenu() {
       },
     );
     setCategories(categoriesResult.data || []);
-    setItems(itemsResult.data || []);
+    setItems(loadedItems);
+    setOptionGroups(loadedGroups);
+    setOptionValues(loadedValues);
+    setChoiceDrafts(buildDrafts(loadedGroups, loadedValues));
     setNewItem((current) => ({
       ...current,
       category_id: categoriesResult.data?.[0]?.id || "",
@@ -95,6 +165,16 @@ export default function AdminBusinessMenu() {
   useEffect(() => {
     if (authenticated && id) loadMenu();
   }, [authenticated, id]);
+
+  const groupsByItem = useMemo(
+    () =>
+      optionGroups.reduce((all, group) => {
+        if (!all[group.menu_item_id]) all[group.menu_item_id] = [];
+        all[group.menu_item_id].push(group);
+        return all;
+      }, {}),
+    [optionGroups],
+  );
 
   const saveSettings = async () => {
     if (!settings) return;
@@ -146,7 +226,7 @@ export default function AdminBusinessMenu() {
   const deleteCategory = async (categoryId) => {
     if (
       !window.confirm(
-        "Delete this category? Its items will stay on the menu without a category.",
+        "Delete this category? Its items stay on the menu without a category.",
       )
     )
       return;
@@ -198,37 +278,144 @@ export default function AdminBusinessMenu() {
     loadMenu();
   };
 
+  const updateChoiceDraft = (groupId, field, value) => {
+    setChoiceDrafts((current) => ({
+      ...current,
+      [groupId]: { ...current[groupId], [field]: value },
+    }));
+  };
+
+  const addChoiceGroup = async (itemId) => {
+    const { error } = await supabase.from("menu_item_option_groups").insert({
+      menu_item_id: itemId,
+      name: "Choose an option",
+      selection_type: "single",
+      is_required: true,
+      sort_order: (groupsByItem[itemId] || []).length + 1,
+    });
+    if (error) return showNotice(error.message);
+    showNotice("Dropdown added");
+    loadMenu();
+  };
+
+  const saveChoiceGroup = async (groupId) => {
+    const draft = choiceDrafts[groupId] || emptyChoice;
+    const values = parseValues(draft.values || "");
+    if (!draft.name.trim()) return showNotice("Add a dropdown label");
+    if (!values.length) return showNotice("Add at least one choice");
+
+    setSaving(true);
+    const { error: groupError } = await supabase
+      .from("menu_item_option_groups")
+      .update({
+        name: draft.name.trim(),
+        is_required: Boolean(draft.is_required),
+        selection_type: "single",
+      })
+      .eq("id", groupId);
+
+    if (groupError) {
+      setSaving(false);
+      return showNotice(groupError.message);
+    }
+
+    const { error: clearError } = await supabase
+      .from("menu_item_option_values")
+      .delete()
+      .eq("option_group_id", groupId);
+
+    if (clearError) {
+      setSaving(false);
+      return showNotice(clearError.message);
+    }
+
+    const { error: valuesError } = await supabase
+      .from("menu_item_option_values")
+      .insert(
+        values.map((value, index) => ({
+          option_group_id: groupId,
+          name: value.name,
+          price_adjustment: value.price_adjustment,
+          is_available: true,
+          sort_order: index + 1,
+        })),
+      );
+
+    setSaving(false);
+    if (valuesError) return showNotice(valuesError.message);
+    showNotice("Choices saved");
+    loadMenu();
+  };
+
+  const copyChoiceGroup = async (sourceId, itemId) => {
+    const source = optionGroups.find((group) => group.id === sourceId);
+    const sourceValues = optionValues.filter(
+      (value) => value.option_group_id === sourceId,
+    );
+    if (!source) return showNotice("Choose a dropdown to copy first");
+    if (!sourceValues.length)
+      return showNotice("That dropdown has no choices yet");
+
+    setSaving(true);
+    const { data: newGroup, error: groupError } = await supabase
+      .from("menu_item_option_groups")
+      .insert({
+        menu_item_id: itemId,
+        name: source.name,
+        selection_type: "single",
+        is_required: source.is_required,
+        sort_order: (groupsByItem[itemId] || []).length + 1,
+      })
+      .select("id")
+      .single();
+
+    if (groupError) {
+      setSaving(false);
+      return showNotice(groupError.message);
+    }
+
+    const { error: valuesError } = await supabase
+      .from("menu_item_option_values")
+      .insert(
+        sourceValues.map((value, index) => ({
+          option_group_id: newGroup.id,
+          name: value.name,
+          price_adjustment: value.price_adjustment,
+          is_available: value.is_available,
+          sort_order: index + 1,
+        })),
+      );
+
+setSaving(false);
+    if (valuesError) return showNotice(valuesError.message);
+    showNotice("Dropdown copied");
+    loadMenu();
+  };
+
+  const deleteChoiceGroup = async (groupId) => {
+    if (!window.confirm("Delete this dropdown and all its choices?")) return;
+    const { error } = await supabase
+      .from("menu_item_option_groups")
+      .delete()
+      .eq("id", groupId);
+    if (error) return showNotice(error.message);
+    showNotice("Dropdown deleted");
+    loadMenu();
+  };
+
   if (!checked) return null;
-
-  if (!authenticated) {
+  if (!authenticated)
     return (
-      <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
-        <p className="text-neutral-400">
-          Please{" "}
-          <Link href="/admin" className="text-orange-400">
-            log in
-          </Link>{" "}
-          first.
-        </p>
-      </main>
+      <Centered>
+        Please{" "}
+        <Link href="/admin" className="text-orange-400">
+          log in
+        </Link>{" "}
+        first.
+      </Centered>
     );
-  }
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
-        <p className="text-neutral-400">Loading menu controls...</p>
-      </main>
-    );
-  }
-
-  if (!business || !settings) {
-    return (
-      <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
-        <p className="text-neutral-400">Business not found.</p>
-      </main>
-    );
-  }
+  if (loading) return <Centered>Loading menu controls...</Centered>;
+  if (!business || !settings) return <Centered>Business not found.</Centered>;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-4 py-8 sm:px-6 sm:py-10">
@@ -290,9 +477,10 @@ export default function AdminBusinessMenu() {
               }
             />
           </div>
-
           <div className="mt-4">
-            <label className="block text-xs text-neutral-400 mb-1">Customer flow</label>
+            <label className="block text-xs text-neutral-400 mb-1">
+              Customer flow
+            </label>
             <select
               value={settings.menu_mode || "order"}
               onChange={(event) =>
@@ -304,10 +492,10 @@ export default function AdminBusinessMenu() {
               <option value="enquiry">Services — WhatsApp quote enquiry</option>
             </select>
             <p className="mt-2 text-xs text-neutral-500">
-              Use quote enquiry for services with starting prices. It removes collection, delivery and order totals from the customer screen.
+              Use quote enquiry for services with starting prices. It removes
+              collection, delivery and totals from the customer screen.
             </p>
           </div>
-
           <div className="grid gap-3 sm:grid-cols-2 mt-4">
             <Field
               label="WhatsApp order number"
@@ -443,25 +631,14 @@ export default function AdminBusinessMenu() {
               onChange={(value) => setNewItem({ ...newItem, price: value })}
               placeholder="59"
             />
-            <div>
-              <label className="block text-xs text-neutral-400 mb-1">
-                Category
-              </label>
-              <select
-                value={newItem.category_id}
-                onChange={(event) =>
-                  setNewItem({ ...newItem, category_id: event.target.value })
-                }
-                className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-white"
-              >
-                <option value="">No category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Category"
+              value={newItem.category_id}
+              onChange={(value) =>
+                setNewItem({ ...newItem, category_id: value })
+              }
+              options={categories}
+            />
             <TextArea
               label="Description (optional)"
               value={newItem.description}
@@ -479,8 +656,8 @@ export default function AdminBusinessMenu() {
         <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
           <h2 className="text-xl font-bold text-orange-400">Menu items</h2>
           <p className="text-sm text-neutral-400 mt-1">
-            Edit a field then tap outside it to save. Turn off Available when an
-            item is sold out.
+            Edit a field then tap outside it to save. Open Product choices only
+            for a flavour, sauce, bread or size dropdown.
           </p>
           <div className="space-y-4 mt-5">
             {items.length === 0 && (
@@ -522,64 +699,24 @@ export default function AdminBusinessMenu() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-3 sm:grid-cols-4">
-                  <div>
-                    <label className="block text-xs text-neutral-400 mb-1">
-                      Price (R)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      defaultValue={item.price}
-                      onBlur={(event) =>
-                        updateItem(
-                          item.id,
-                          "price",
-                          Number(event.target.value) || 0,
-                        )
-                      }
-                      className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-neutral-400 mb-1">
-                      Category
-                    </label>
-                    <select
-                      defaultValue={item.category_id || ""}
-                      onChange={(event) =>
-                        updateItem(
-                          item.id,
-                          "category_id",
-                          event.target.value || null,
-                        )
-                      }
-                      className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-white"
-                    >
-                      <option value="">None</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-neutral-400 mb-1">
-                      Order
-                    </label>
-                    <input
-                      type="number"
-                      defaultValue={item.sort_order}
-                      onBlur={(event) =>
-                        updateItem(
-                          item.id,
-                          "sort_order",
-                          Number(event.target.value) || 0,
-                        )
-                      }
-                      className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-white"
-                    />
-                  </div>
+                  <NumberField
+                    label="Price (R)"
+                    defaultValue={item.price}
+                    onBlur={(value) => updateItem(item.id, "price", value)}
+                  />
+                  <Select
+                    label="Category"
+                    value={item.category_id || ""}
+                    onChange={(value) =>
+                      updateItem(item.id, "category_id", value || null)
+                    }
+                    options={categories}
+                  />
+                  <NumberField
+                    label="Order"
+                    defaultValue={item.sort_order}
+                    onBlur={(value) => updateItem(item.id, "sort_order", value)}
+                  />
                   <label className="flex items-end gap-2 pb-2 text-sm text-neutral-200">
                     <input
                       type="checkbox"
@@ -595,6 +732,22 @@ export default function AdminBusinessMenu() {
                     Available
                   </label>
                 </div>
+                <ChoiceEditor
+                  item={item}
+                  groups={groupsByItem[item.id] || []}
+                  drafts={choiceDrafts}
+                  allGroups={optionGroups}
+                  copyFrom={copyFrom[item.id] || ""}
+                  saving={saving}
+                  setCopyFrom={(value) =>
+                    setCopyFrom({ ...copyFrom, [item.id]: value })
+                  }
+                  updateDraft={updateChoiceDraft}
+                  addGroup={addChoiceGroup}
+                  saveGroup={saveChoiceGroup}
+                  copyGroup={copyChoiceGroup}
+                  deleteGroup={deleteChoiceGroup}
+                />
               </article>
             ))}
           </div>
@@ -603,7 +756,122 @@ export default function AdminBusinessMenu() {
     </main>
   );
 }
+function ChoiceEditor({
+  item,
+  groups,
+  drafts,
+  allGroups,
+  copyFrom,
+  saving,
+  setCopyFrom,
+  updateDraft,
+  addGroup,
+  saveGroup,
+  copyGroup,
+  deleteGroup,
+}) {
+  return (
+    <details className="mt-4 rounded-lg border border-neutral-700 bg-neutral-900/70 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-orange-300">
+        Product choices — flavours, sauces, bread, sizes
+      </summary>
+      <p className="mt-2 text-xs text-neutral-500">
+        One choice per line. Optional extra charge format: Extra cheese | 10.
+        For the second milkshake size, copy the first flavour dropdown.
+      </p>
+      <div className="space-y-4 mt-4">
+        {groups.map((group) => {
+          const draft = drafts[group.id] || emptyChoice;
+          return (
+            <div
+              key={group.id}
+              className="rounded-lg border border-neutral-700 bg-neutral-800 p-3"
+            >
+              <div className="flex gap-3">
+                <div className="min-w-0 flex-1">
+                  <Field
+                    label="Dropdown label"
+                    value={draft.name}
+                    onChange={(value) => updateDraft(group.id, "name", value)}
+                    placeholder="e.g. Choose flavour"
+                  />
+                </div>
+                <button
+                  onClick={() => deleteGroup(group.id)}
+                  className="self-end mb-3 text-sm text-red-400"
+                >
+                  Delete
+                </button>
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-sm text-neutral-200">
+                <input
+                  type="checkbox"
+                  checked={draft.is_required}
+                  onChange={(event) =>
+                    updateDraft(group.id, "is_required", event.target.checked)
+                  }
+                />{" "}
+                Customer must choose one
+              </label>
+              <TextArea
+                label="Choices — one per line"
+                value={draft.values}
+                onChange={(value) => updateDraft(group.id, "values", value)}
+                placeholder={"Strawberry\nChocolate\nBubblegum"}
+              />
+              <button
+                onClick={() => saveGroup(group.id)}
+                disabled={saving}
+                className="mt-3 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold"
+              >
+                Save choices
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => addGroup(item.id)}
+          className="rounded-lg border border-orange-500/60 px-4 py-2 text-sm font-semibold text-orange-300 hover:bg-orange-500/10"
+        >
+          + Add dropdown
+        </button>
+        {allGroups.length > 0 && (
+          <>
+            <select
+              value={copyFrom}
+              onChange={(event) => setCopyFrom(event.target.value)}
+              className="min-w-0 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white"
+            >
+              <option value="">Copy an existing dropdown…</option>
+              {allGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => copyGroup(copyFrom, item.id)}
+              disabled={!copyFrom || saving}
+              className="rounded-lg border border-neutral-600 px-4 py-2 text-sm text-neutral-200 disabled:opacity-40"
+            >
+              Copy choices
+            </button>
+          </>
+        )}
+      </div>
+    </details>
+  );
+}
 
+function Centered({ children }) {
+  return (
+    <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
+      <p className="text-neutral-400">{children}</p>
+    </main>
+  );
+}
 function Toggle({ label, checked, onChange }) {
   return (
     <label className="flex items-center justify-between gap-3 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-sm">
@@ -617,7 +885,6 @@ function Toggle({ label, checked, onChange }) {
     </label>
   );
 }
-
 function Field({ label, value, onChange, placeholder, type = "text", step }) {
   return (
     <div>
@@ -633,7 +900,6 @@ function Field({ label, value, onChange, placeholder, type = "text", step }) {
     </div>
   );
 }
-
 function TextArea({ label, value, onChange, placeholder }) {
   return (
     <div>
@@ -642,8 +908,41 @@ function TextArea({ label, value, onChange, placeholder }) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        rows={3}
-        className="w-full resize-none rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-white outline-none focus:border-orange-500"
+        rows={4}
+        className="w-full resize-y rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-white outline-none focus:border-orange-500"
+      />
+    </div>
+  );
+}
+function Select({ label, value, onChange, options }) {
+  return (
+    <div>
+      <label className="block text-xs text-neutral-400 mb-1">{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-white"
+      >
+        <option value="">None</option>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+function NumberField({ label, defaultValue, onBlur }) {
+  return (
+    <div>
+      <label className="block text-xs text-neutral-400 mb-1">{label}</label>
+      <input
+        type="number"
+        step="0.01"
+        defaultValue={defaultValue}
+        onBlur={(event) => onBlur(Number(event.target.value) || 0)}
+        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-white"
       />
     </div>
   );
