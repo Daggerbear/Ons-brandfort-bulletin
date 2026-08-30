@@ -13,7 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Ons Brandfort Bulletin",
+  metadataBase: new URL("https://ons-brandfort-bulletin.vercel.app"),
+  title: {
+    default: "Ons Brandfort Bulletin",
+    template: "%s | Ons Brandfort Bulletin",
+  },
   description: "Brandfort se gemeenskapsplatform / Brandfort's community platform",
   manifest: "/manifest.json",
   icons: {
@@ -22,6 +26,31 @@ export const metadata = {
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Ons Brandfort Bulletin",
+    description: "Die hart van Brandfort, op een plek.",
+    url: "https://ons-brandfort-bulletin.vercel.app",
+    siteName: "Ons Brandfort Bulletin",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Ons Brandfort Bulletin",
+      },
+    ],
+    locale: "af_ZA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ons Brandfort Bulletin",
+    description: "Die hart van Brandfort, op een plek.",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: "/",
   },
 };
 
