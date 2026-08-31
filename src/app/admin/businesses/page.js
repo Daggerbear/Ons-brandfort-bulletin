@@ -216,6 +216,16 @@ export default function AdminBusinesses() {
                 className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
               />
               <label className="block text-xs text-neutral-500 mb-1">
+                Website
+              </label>
+              <input
+                type="url"
+                placeholder="https://..."
+                defaultValue={b.website}
+                onBlur={(e) => updateBusiness(b.id, "website", e.target.value)}
+                className="w-full bg-neutral-800 rounded px-3 py-2 mb-2 text-white"
+              />
+              <label className="block text-xs text-neutral-500 mb-1">
                 Address
               </label>
               <input
