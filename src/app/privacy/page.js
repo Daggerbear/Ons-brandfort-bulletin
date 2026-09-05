@@ -10,10 +10,12 @@ export default function Privacy() {
       title: "Privaatheidsbeleid",
       updated: "Laas opgedateer: Augustus 2026",
       sections: [
-        {
+{
           h: "1. Wie Ons Is",
           p: [
-            "Ons Brandfort Bulletin word bedryf deur Jaco du Plessis, as 'n eenmansaak in Brandfort, Vrystaat. Ons is verantwoordelik vir enige persoonlike inligting wat via hierdie webwerf versamel word, in ooreenstemming met die Suid-Afrikaanse Wet op Beskerming van Persoonlike Inligting (POPIA).",
+            "Ons Brandfort Bulletin word bedryf deur Jaco du Plessis, as 'n eenmansaak in Brandfort, Vrystaat.",
+            "Hierdie beleid gaan spesifiek oor hoe ons persoonlike inligting hanteer en beskerm, in ooreenstemming met die Suid-Afrikaanse Wet op Beskerming van Persoonlike Inligting (POPIA) — dit gaan nie oor die akkuraatheid van inhoud wat gebruikers self plaas nie (sien ons Bepalings & Voorwaardes vir daardie deel).",
+            "As enige inligting oor jou verkeerd is (bv. in 'n besigheidslysing), is dit jou verantwoordelikheid om ons te kontak sodat ons dit kan regstel of verwyder — sien afdeling 6 hieronder.",
           ],
         },
         {
@@ -77,10 +79,12 @@ export default function Privacy() {
       title: "Privacy Policy",
       updated: "Last updated: August 2026",
       sections: [
-        {
+{
           h: "1. Who We Are",
           p: [
-            "Ons Brandfort Bulletin is operated by Jaco du Plessis, as a sole proprietor in Brandfort, Free State. We are responsible for any personal information collected through this website, in accordance with South Africa's Protection of Personal Information Act (POPIA).",
+            "Ons Brandfort Bulletin is operated by Jaco du Plessis, as a sole proprietor in Brandfort, Free State.",
+            "This policy covers specifically how we handle and protect personal information, in accordance with South Africa's Protection of Personal Information Act (POPIA) — it does not cover the accuracy of content that users submit themselves (see our Terms & Conditions for that).",
+            "If any information about you is incorrect (e.g. in a business listing), it's your responsibility to contact us so we can correct or remove it — see section 6 below.",
           ],
         },
         {

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 const DIFFICULTY_REMOVALS = {
   easy: 35,
@@ -229,6 +230,8 @@ export default function Sudoku() {
           </button>
         </div>
       )}
+
+      <GameSponsorBanner gameSlug="sudoku" />
 
       <Link href="/games" className="text-neutral-600 hover:text-white underline mt-10 text-sm">
         ← Back to Game Room

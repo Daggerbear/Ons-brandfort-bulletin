@@ -3,15 +3,15 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { getStoredPlayer, clearStoredPlayer } from "@/lib/playerAuth";
+import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 const ANCHOR_UTC = Date.UTC(2026, 7, 3);
-const TOTAL_RIDDLES = 50;
 
-function getDayIndex() {
+function getDayIndex(totalRiddles) {
   const now = new Date();
   const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
   const diffDays = Math.floor((todayUtc - ANCHOR_UTC) / 86400000);
-  const idx = ((diffDays % TOTAL_RIDDLES) + TOTAL_RIDDLES) % TOTAL_RIDDLES;
+  const idx = ((diffDays % totalRiddles) + totalRiddles) % totalRiddles;
   return idx + 1;
 }
 
@@ -80,13 +80,32 @@ export default function RiddleRush() {
       const storedPlayer = getStoredPlayer();
       setPlayer(storedPlayer);
 
-      const dayIndex = getDayIndex();
-      const { data } = await supabase
+      // Count only ACTIVE riddles — this is the real rotation length,
+      // pulled live so nobody has to remember to update a hardcoded number.
+      const { count: activeCount } = await supabase
+        .from("riddles")
+        .select("*", { count: "exact", head: true })
+        .eq("active", true);
+
+      const totalRiddles = activeCount && activeCount > 0 ? activeCount : 1;
+
+      // Get the day's index within the current active-riddle count, then
+      // fetch the Nth active riddle ordered by day_index. This means gaps
+      // (e.g. day 12 deactivated) don't break rotation — it just skips it.
+      const dayIndex = getDayIndex(totalRiddles);
+
+      const { data: activeRiddles } = await supabase
         .from("riddles")
         .select("id, riddle_text")
-        .eq("day_index", dayIndex)
-        .single();
-      setRiddle(data || null);
+        .eq("active", true)
+        .order("day_index", { ascending: true });
+
+      const todaysRiddle =
+        activeRiddles && activeRiddles.length > 0
+          ? activeRiddles[(dayIndex - 1) % activeRiddles.length]
+          : null;
+
+      setRiddle(todaysRiddle || null);
 
       if (storedPlayer) {
         loadProgressFor(storedPlayer.name);
@@ -269,9 +288,11 @@ export default function RiddleRush() {
           ))}
         </div>
 
+        <GameSponsorBanner gameSlug="riddle-rush" />
+
         <Link
           href="/games"
-          className="block text-center text-neutral-600 hover:text-white underline text-sm"
+          className="block text-center text-neutral-600 hover:text-white underline text-sm mt-8"
         >
           ← Back to Game Room
         </Link>

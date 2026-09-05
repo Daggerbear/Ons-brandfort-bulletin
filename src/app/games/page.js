@@ -1,46 +1,93 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import GamesCarousel from "@/components/GamesCarousel";
 
+export const metadata = {
+  title: "Glitch Cafe — Speletjies",
+  description: "Speel gratis speletjies teen vriende of alleen — Battleship, Chess, Sudoku, Checkers, Riddle Rush en meer, almal in Brandfort se Glitch Cafe.",
+  alternates: {
+    canonical: "/games",
+  },
+  openGraph: {
+    title: "Glitch Cafe | Ons Brandfort Bulletin",
+    description: "Speel gratis speletjies teen vriende of alleen — almal in een plek.",
+    url: "/games",
+  },
+}
 export const dynamic = "force-dynamic";
 
 const games = [
   {
-    name: "🚢 Battleship",
-    desc: "Play against a friend in real-time. No account needed.",
+    name: "Battleship",
+    icon: "🚢",
+    desc: "Real-time vs a friend.",
     href: "/games/battleship",
     color: "cyan",
   },
   {
-    name: "♟️ Chess",
-    desc: "Classic 1v1 chess. Play against a friend in real-time.",
+    name: "Chess",
+    icon: "♟️",
+    desc: "Classic 1v1, real-time.",
     href: "/games/chess",
     color: "green",
   },
   {
-    name: "🔢 Sudoku",
-    desc: "Classic number puzzle. Three difficulty levels.",
+    name: "Sudoku",
+    icon: "🔢",
+    desc: "3 difficulty levels.",
     href: "/games/sudoku",
     color: "purple",
   },
   {
-  name: "🔴 Checkers",
-  desc: "Classic 1v1 checkers. Play against a friend in real-time.",
-  href: "/games/checkers",
-  color: "red",
-},
+    name: "Checkers",
+    icon: "🔴",
+    desc: "Classic 1v1, real-time.",
+    href: "/games/checkers",
+    color: "red",
+  },
   {
-    name: "🧩 Riddle Rush",
-    desc: "One riddle a day. 3 tries, monthly leaderboard.",
+    name: "Riddle Rush",
+    icon: "🧩",
+    desc: "Daily riddle, 3 tries.",
     href: "/games/riddle-rush",
     color: "pink",
   },
   {
-  name: "🧱 Block Rush",
-  desc: "Classic falling block puzzle. How high can you score?",
-  href: "/games/block-rush",
-  color: "cyan",
-},
+    name: "Block Rush",
+    icon: "🧱",
+    desc: "Falling block puzzle.",
+    href: "/games/block-rush",
+    color: "cyan",
+  },
+  {
+    name: "Whack-a-Mole",
+    icon: "🔨",
+    desc: "Tap the mole, beat the clock.",
+    href: "/games/whack-a-mole",
+    color: "purple",
+  },
+  {
+    name: "Snake",
+    icon: "🐍",
+    desc: "Classic snake, swipe controls.",
+    href: "/games/snake",
+    color: "green",
+  },
+  {
+    name: "Brick Breaker",
+    icon: "🧱",
+    desc: "Drag paddle, break bricks.",
+    href: "/games/brick-breaker",
+    color: "pink",
+  },
+  {
+    name: "Merge Rush",
+    icon: "🔢",
+    desc: "Swipe to merge, reach 2048.",
+    href: "/games/merge-rush",
+    color: "cyan",
+  },
 ];
 
 const colorMap = {
@@ -101,23 +148,26 @@ export default async function GamesHome() {
             Game Room
           </h1>
         )}
-        <p className="text-neutral-500 text-center text-sm mb-10 tracking-wide uppercase">
+        <p className="text-neutral-500 text-center text-sm mb-8 tracking-wide uppercase">
           Local Game Room 🕹️
         </p>
 
-        <div className="space-y-4">
+        <GamesCarousel />
+
+        <div className="grid grid-cols-2 gap-3">
           {games.map((game) => (
             <Link
               key={game.href}
               href={game.href}
-              className={`block bg-neutral-950/90 border-2 rounded-2xl p-6 transition shadow-lg hover:shadow-2xl ${colorMap[game.color]}`}
+              className={`bg-neutral-950/90 border-2 rounded-2xl p-4 transition shadow-lg hover:shadow-2xl flex flex-col items-center text-center gap-1 ${colorMap[game.color]}`}
             >
-              <h2 className="text-xl font-bold uppercase tracking-wide">{game.name}</h2>
-              <p className="text-sm text-neutral-400 mt-2">{game.desc}</p>
+              <span className="text-3xl">{game.icon}</span>
+              <h2 className="text-sm font-bold uppercase tracking-wide">{game.name}</h2>
+              <p className="text-xs text-neutral-500">{game.desc}</p>
             </Link>
           ))}
 
-          <div className="border-2 border-dashed border-neutral-800 rounded-2xl p-6 text-center bg-black/40">
+          <div className="col-span-2 border-2 border-dashed border-neutral-800 rounded-2xl p-4 text-center bg-black/40">
             <p className="text-neutral-600 text-sm uppercase tracking-wide">
               More games coming soon...
             </p>
@@ -126,7 +176,7 @@ export default async function GamesHome() {
 
         <Link
           href="/"
-          className="block text-center text-neutral-600 hover:text-white underline mt-12 text-sm"
+          className="block text-center text-neutral-600 hover:text-white underline mt-10 text-sm"
         >
           ← Back to Bulletin
         </Link>

@@ -12,6 +12,7 @@ import {
   cancelQueueEntry,
   subscribeToQueueEntry,
 } from "@/lib/matchmaking";
+import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -186,7 +187,7 @@ export default function CheckersHome() {
   if (!player) return null;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
+    <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-sm">
         <h1 className="text-3xl font-bold text-center mb-2">🔴 Checkers</h1>
         <p className="text-neutral-500 text-center text-sm mb-4">
@@ -275,6 +276,10 @@ export default function CheckersHome() {
         )}
 
         {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
+
+        <div className="flex justify-center mt-6">
+          <GameSponsorBanner gameSlug="checkers" />
+        </div>
       </div>
     </main>
   );

@@ -5,11 +5,15 @@ export default function Footer({ lang }) {
     af: {
       terms: "Bepalings & Voorwaardes",
       privacy: "Privaatheidsbeleid",
+      mission: "Ons Visie & Missie",
+      contact: "Kontak Ons",
       built: "Gebou deur Jaco du Plessis — vir Brandfort, deur Brandfort.",
     },
     en: {
       terms: "Terms & Conditions",
       privacy: "Privacy Policy",
+      mission: "Our Vision & Mission",
+      contact: "Contact Us",
       built: "Built by Jaco du Plessis — for Brandfort, by Brandfort.",
     },
   };
@@ -17,7 +21,13 @@ export default function Footer({ lang }) {
 
   return (
     <footer className="border-t border-neutral-800 px-6 py-8 text-center text-neutral-500 text-sm">
-      <div className="flex justify-center gap-4 mb-3">
+      <div className="flex flex-wrap justify-center gap-4 mb-3">
+        <Link href="/mission" className="hover:text-orange-400 underline">
+          {t.mission}
+        </Link>
+        <Link href="/contact" className="hover:text-orange-400 underline">
+          {t.contact}
+        </Link>
         <Link href="/terms" className="hover:text-orange-400 underline">
           {t.terms}
         </Link>

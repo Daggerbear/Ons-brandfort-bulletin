@@ -7,6 +7,7 @@ export default function Nav({ lang }) {
   const text = {
     af: {
       home: "Tuisblad",
+      besighede: "Ons Besighede",
       business: "Lys Besigheid",
       event: "Lys Gebeurtenis",
       feed: "Gemeenskap Feed",
@@ -14,10 +15,14 @@ export default function Nav({ lang }) {
       jobs: "Werk",
       emergency: "Nood Kontakte",
       games: "Glitch Cafe",
+      mission: "Ons Visie & Missie",
+      terms: "Bepalings & Voorwaardes",
+      privacy: "Privaatheidsbeleid",
       menu: "Kieslys",
     },
     en: {
       home: "Home",
+      besighede: "Our Businesses",
       business: "List Business",
       event: "List Event",
       feed: "Community Feed",
@@ -25,6 +30,9 @@ export default function Nav({ lang }) {
       jobs: "Jobs",
       emergency: "Emergency",
       games: "Glitch Cafe",
+      mission: "Our Vision & Mission",
+      terms: "Terms & Conditions",
+      privacy: "Privacy Policy",
       menu: "Menu",
     },
   };
@@ -32,6 +40,7 @@ export default function Nav({ lang }) {
 
   const links = [
     { label: t.home, href: "/" },
+    { label: t.besighede, href: "/besighede" },
     { label: t.business, href: "/list-your-business" },
     { label: t.event, href: "/list-your-event" },
     { label: t.feed, href: "/feed" },
@@ -39,6 +48,12 @@ export default function Nav({ lang }) {
     { label: t.jobs, href: "/jobs" },
     { label: t.emergency, href: "/emergency" },
     { label: t.games, href: "/games" },
+  ];
+
+  const footerLinks = [
+    { label: t.mission, href: "/mission" },
+    { label: t.terms, href: "/terms" },
+    { label: t.privacy, href: "/privacy" },
   ];
 
   return (
@@ -68,6 +83,18 @@ export default function Nav({ lang }) {
               {link.label}
             </a>
           ))}
+          <div className="border-t border-neutral-800">
+            {footerLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block px-6 py-3 text-neutral-500 text-xs hover:text-orange-400 hover:bg-neutral-900 transition border-b border-neutral-900 last:border-0"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </nav>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 const COLS = 10;
 const ROWS = 20;
@@ -175,7 +176,6 @@ export default function BlockRush() {
         return;
       }
     }
-    // No valid rotation found (fully blocked) — do nothing
   }
 
   function lockPieceAt(pieceToLock) {
@@ -393,6 +393,8 @@ export default function BlockRush() {
           </div>
         </div>
       )}
+
+      <GameSponsorBanner gameSlug="block-rush" />
 
       <Link href="/games" className="text-neutral-600 hover:text-white underline mt-6 text-xs">
         ← Back to Game Room

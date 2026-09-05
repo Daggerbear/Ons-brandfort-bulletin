@@ -17,6 +17,18 @@ const CATEGORY_ICONS = {
   "Other": "📦",
 };
 
+const CATEGORY_SLUGS = {
+  "Agriculture": "agriculture",
+  "Automotive": "automotive",
+  "Beauty & Spa": "beauty-spa",
+  "Food & Dining": "food-dining",
+  "Health & Medical": "health-medical",
+  "Home Services": "home-services",
+  "Professional Services": "professional-services",
+  "Retail & Shopping": "retail-shopping",
+  "Other": "other",
+};
+
 export default function BusinessDetail() {
   const { id } = useParams();
   const [lang, setLang] = useState("af");
@@ -88,7 +100,7 @@ export default function BusinessDetail() {
 
   const text = {
     af: {
-      back: "Terug na Tuisblad",
+      back: "Terug na Kategorie",
       address: "Adres",
       hours: "Ure",
       contact: "Kontak",
@@ -102,9 +114,12 @@ export default function BusinessDetail() {
       yourComment: "Skryf 'n resensie...",
       submit: "Plaas Resensie",
       submitting: "Stuur...",
+      share: "Deel hierdie besigheid",
+      shareMessage: (name, desc, url) =>
+        `Kyk na ${name} op Ons Brandfort Bulletin — ${desc}. Sien hul besonderhede hier: ${url}`,
     },
     en: {
-      back: "Back to Homepage",
+      back: "Back to Category",
       address: "Address",
       hours: "Hours",
       contact: "Contact",
@@ -118,6 +133,9 @@ export default function BusinessDetail() {
       yourComment: "Write a review...",
       submit: "Post Review",
       submitting: "Posting...",
+      share: "Share this business",
+      shareMessage: (name, desc, url) =>
+        `Check out ${name} on Ons Brandfort Bulletin — ${desc}. View their details here: ${url}`,
     },
   };
 
@@ -147,6 +165,17 @@ export default function BusinessDetail() {
     return `https://${website}`;
   };
 
+  const getShareLink = () => {
+    if (!business) return null;
+    const desc = business.category || business.description?.slice(0, 60) || "";
+    const url =
+      typeof window !== "undefined"
+        ? window.location.href
+        : `https://ons-brandfort-bulletin.vercel.app/business/${id}`;
+    const message = t.shareMessage(business.name, desc, url);
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
@@ -163,7 +192,7 @@ export default function BusinessDetail() {
         <div className="max-w-md mx-auto mt-20 text-center">
           <p className="text-neutral-400 mb-6">{t.notFound}</p>
           <a
-            href="/"
+            href="/besighede"
             className="text-orange-400 hover:text-orange-300 underline"
           >
             {t.back}
@@ -175,7 +204,9 @@ export default function BusinessDetail() {
 
   const whatsappLink = getWhatsappLink(business.contact);
   const websiteLink = getWebsiteLink(business.website);
+  const shareLink = getShareLink();
   const categoryIcon = CATEGORY_ICONS[business.category] || "🏪";
+  const categorySlug = CATEGORY_SLUGS[business.category] || "all";
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -352,9 +383,21 @@ export default function BusinessDetail() {
           </div>
         </div>
 
+        {shareLink && (
+          <a
+            href={shareLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 text-sm text-neutral-400 hover:text-orange-400 border border-neutral-800 hover:border-orange-500/50 transition rounded-lg px-4 py-3 mt-6"
+          >
+            <span>📤</span>
+            {t.share}
+          </a>
+        )}
+
         <a
-          href="/"
-          className="block text-center text-neutral-400 hover:text-white underline mt-8"
+          href={`/besighede/${categorySlug}`}
+          className="block text-center text-neutral-400 hover:text-white underline mt-6"
         >
           {t.back}
         </a>
