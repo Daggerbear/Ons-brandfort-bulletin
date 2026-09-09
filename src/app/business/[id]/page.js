@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Image from "next/image";
+import { trackEvent } from "@/lib/analytics";
 
 const CATEGORY_ICONS = {
   "Agriculture": "🌾",
@@ -53,6 +54,9 @@ export default function BusinessDetail() {
       ]);
 
       if (!businessResult.error) setBusiness(businessResult.data);
+      if (!businessResult.error && businessResult.data) {
+        trackEvent("business_view", { businessId: businessResult.data.id });
+      }
       setMenuEnabled(menuResult.data?.menu_enabled === true);
       setLoading(false);
     };

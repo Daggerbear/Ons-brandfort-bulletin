@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Link from "next/link";
 import Image from "next/image";
+import { expandQuery, tokenize, stem } from "@/lib/searchSynonyms";
 
 const CATEGORIES = [
   { name: "All", slug: "all", icon: "🏪" },
@@ -18,6 +19,25 @@ const CATEGORIES = [
   { name: "Other", slug: "other", icon: "📦" },
 ];
 
+function matchesStructured(business, term) {
+  const structuredText = [business.name, business.category, ...(business.services || [])]
+    .join(" ")
+    .toLowerCase();
+
+  if (term.includes(" ")) return structuredText.includes(term);
+
+  const words = new Set(tokenize(structuredText).map(stem));
+  return words.has(stem(term));
+}
+
+function matchesDescription(business, term) {
+  const desc = (business.description || "").toLowerCase();
+  if (term.includes(" ")) return desc.includes(term);
+
+  const words = new Set(tokenize(desc).map(stem));
+  return words.has(stem(term));
+}
+
 export default function Besighede() {
   const [lang, setLang] = useState("af");
   const [businesses, setBusinesses] = useState([]);
@@ -28,14 +48,14 @@ export default function Besighede() {
       title: "🏪 Ons Besighede",
       subtitle: "Kies 'n kategorie om plaaslike besighede te ontdek",
       businesses: "besighede",
-      search: "Soek besighede...",
+      search: "Soek besighede of dienste...",
       none: "Geen besighede gevind nie.",
     },
     en: {
       title: "🏪 Our Businesses",
       subtitle: "Choose a category to discover local businesses",
       businesses: "businesses",
-      search: "Search businesses...",
+      search: "Search businesses or services...",
       none: "No businesses found.",
     },
   };
@@ -59,12 +79,18 @@ export default function Besighede() {
   };
 
   const isSearching = searchTerm.trim() !== "";
+  const expandedTerms = expandQuery(searchTerm);
 
-  const searchResults = businesses.filter(
-    (b) =>
-      b.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const strongResults = businesses.filter((b) =>
+    expandedTerms.some((term) => matchesStructured(b, term))
   );
+
+  const weakResults =
+    strongResults.length === 0
+      ? businesses.filter((b) => expandedTerms.some((term) => matchesDescription(b, term)))
+      : [];
+
+  const searchResults = [...strongResults, ...weakResults];
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -117,6 +143,18 @@ export default function Besighede() {
                   <h3 className="text-lg font-semibold text-orange-400">{business.name}</h3>
                   <p className="text-sm text-neutral-400 mt-1">{business.category}</p>
                   <p className="text-neutral-300 mt-2 line-clamp-2">{business.description}</p>
+                  {business.services?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {business.services.slice(0, 4).map((s) => (
+                        <span
+                          key={s}
+                          className="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full px-2 py-0.5"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-sm text-neutral-400 mt-2">📞 {business.contact}</p>
                 </div>
               </Link>

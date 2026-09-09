@@ -368,6 +368,25 @@ export default function AdminBusinesses() {
                     <input
                       defaultValue={b.hours}
                       onBlur={(e) => updateBusiness(b.id, "hours", e.target.value)}
+                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
+                    />
+
+                    <label className="block text-xs text-neutral-500 mb-1">
+                      Services (comma-separated, e.g. geyser repair, drains, burst pipes)
+                    </label>
+                    <input
+                      defaultValue={b.services?.join(", ") || ""}
+                      onBlur={(e) =>
+                        updateBusiness(
+                          b.id,
+                          "services",
+                          e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                        )
+                      }
+                      placeholder="geyser repair, drains, burst pipes"
                       className="w-full bg-neutral-800 rounded px-3 py-2 mb-4 text-white"
                     />
 

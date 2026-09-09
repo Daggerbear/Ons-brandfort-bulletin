@@ -147,6 +147,17 @@ export default function Admin() {
       ],
     },
     {
+      label: "Insights",
+      icon: "📊",
+      sections: [
+        {
+          name: "Analytics",
+          href: "/admin/analytics",
+          desc: "Traffic, top businesses, and popular searches — great for sales conversations",
+        },
+      ],
+    },
+    {
       label: "Monetization",
       icon: "💰",
       sections: [

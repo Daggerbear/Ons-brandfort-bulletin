@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import Image from "next/image";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
 import InstallButton from "@/components/InstallButton";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Home() {
   const [lang, setLang] = useState("af");
@@ -34,6 +35,11 @@ export default function Home() {
       submitting: "Stuur...",
       statBusinesses: "Besighede Gelys",
       statEvents: "Gebeurtenisse",
+      findService: {
+        title: "Vind 'n Diens",
+        desc: "Soek 'n loodgieter, kapper, dokter? Sê vir ons wat jy nodig het.",
+        cta: "Soek Nou",
+      },
       cards: [
         { icon: "🏪", title: "Ons Besighede", desc: "Blaai deur plaaslike besighede.", href: "/besighede" },
         { icon: "💬", title: "Gemeenskap Feed", desc: "Vrae, nuus, shoutouts.", href: "/feed" },
@@ -59,6 +65,11 @@ export default function Home() {
       submitting: "Posting...",
       statBusinesses: "Businesses Listed",
       statEvents: "Events",
+      findService: {
+        title: "Find a Service",
+        desc: "Need a plumber, hairdresser, doctor? Tell us what you're looking for.",
+        cta: "Search Now",
+      },
       cards: [
         { icon: "🏪", title: "Our Businesses", desc: "Browse local businesses by category.", href: "/besighede" },
         { icon: "💬", title: "Community Feed", desc: "Questions, news, shoutouts.", href: "/feed" },
@@ -78,6 +89,8 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
+      trackEvent("page_view");
+
       const { data: eventData, count: evCount } = await supabase
         .from("events")
         .select("*", { count: "exact" })
@@ -253,6 +266,31 @@ export default function Home() {
 
       {/* Quick-link cards */}
       <section className="px-6 py-10 max-w-2xl mx-auto">
+        {/* Find a Service — prominent banner, own identity */}
+        <Link
+          href="/vind"
+          className="block relative rounded-2xl p-6 mb-4 overflow-hidden border-2 transition hover:scale-[1.01]"
+          style={{
+            borderColor: "#22d3ee",
+            background:
+              "linear-gradient(135deg, rgba(34,211,238,0.18), rgba(16,185,129,0.12)), #0a0a0a",
+            boxShadow: "0 0 24px rgba(34,211,238,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-5xl">🔎</span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-black uppercase tracking-wide text-cyan-400">
+                {t.findService.title}
+              </h2>
+              <p className="text-sm text-neutral-300 mt-1">{t.findService.desc}</p>
+            </div>
+            <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full bg-cyan-400 text-black flex-shrink-0">
+              {t.findService.cta}
+            </span>
+          </div>
+        </Link>
+
         <Link
           href="/games"
           className="block relative rounded-2xl p-5 mb-4 overflow-hidden border-2 transition hover:scale-[1.01]"
