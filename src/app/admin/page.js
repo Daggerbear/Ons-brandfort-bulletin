@@ -12,7 +12,14 @@ export default function Admin() {
   const [pendingEvents, setPendingEvents] = useState(0);
   const [totalBusinesses, setTotalBusinesses] = useState(0);
   const [totalEvents, setTotalEvents] = useState(0);
+ const [pendingBusinessUpdates, setPendingBusinessUpdates] = useState(0);
 
+supabase
+  .from("business_updates")
+  .select("*", { count: "exact", head: true })
+  .neq("Status", "approved")
+  .then(({ count }) => setPendingBusinessUpdates(count || 0));
+  
   useEffect(() => {
     if (sessionStorage.getItem("adminAuth") === "true") {
       setAuthenticated(true);
@@ -139,7 +146,14 @@ export default function Admin() {
           desc: "Approve, edit, or reject events",
           badge: pendingEvents > 0 ? pendingEvents : null,
         },
+        {
+          name: "Business Updates",
+          href: "/admin/business-updates",
+          desc: "Approve, edit, or reject business updates",
+          badge: pendingBusinessUpdates > 0 ? pendingBusinessUpdates : null,
+        },
         { name: "Gemeenskap Feed", href: "/admin/feed", desc: "Delete flagged or reported posts" },
+      
         { name: "Classifieds", href: "/admin/classifieds", desc: "Moderate buy & sell listings" },
         { name: "Jobs", href: "/admin/jobs", desc: "Moderate job listings & work-seeker posts" },
         { name: "Riddles", href: "/admin/riddles", desc: "Manage Riddle Rush questions, answers, hints, and scheduling" },

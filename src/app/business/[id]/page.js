@@ -1,3 +1,4 @@
+// app/business/[id]/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -30,6 +31,14 @@ const CATEGORY_SLUGS = {
   "Other": "other",
 };
 
+const UPDATE_CATEGORY_LABELS = {
+  Special: { af: "Spesiaal", en: "Special" },
+  "New Stock": { af: "Nuwe Voorraad", en: "New Stock" },
+  Menu: { af: "Spyskaart", en: "Menu" },
+  Offer: { af: "Aanbod", en: "Offer" },
+  Announcement: { af: "Aankondiging", en: "Announcement" },
+};
+
 export default function BusinessDetail() {
   const { id } = useParams();
   const [lang, setLang] = useState("af");
@@ -41,16 +50,24 @@ export default function BusinessDetail() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [updates, setUpdates] = useState([]);
 
   useEffect(() => {
     const fetchBusiness = async () => {
-      const [businessResult, menuResult] = await Promise.all([
+      const [businessResult, menuResult, updatesResult] = await Promise.all([
         supabase.from("businesses").select("*").eq("id", id).single(),
         supabase
           .from("business_menu_settings")
           .select("menu_enabled")
           .eq("business_id", id)
           .maybeSingle(),
+        supabase
+          .from("business_updates")
+          .select("*")
+          .eq("business_id", id)
+          .eq("Status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(3),
       ]);
 
       if (!businessResult.error) setBusiness(businessResult.data);
@@ -58,6 +75,7 @@ export default function BusinessDetail() {
         trackEvent("business_view", { businessId: businessResult.data.id });
       }
       setMenuEnabled(menuResult.data?.menu_enabled === true);
+      setUpdates(updatesResult.data || []);
       setLoading(false);
     };
 
@@ -121,6 +139,7 @@ export default function BusinessDetail() {
       share: "Deel hierdie besigheid",
       shareMessage: (name, desc, url) =>
         `Kyk na ${name} op Ons Brandfort Bulletin — ${desc}. Sien hul besonderhede hier: ${url}`,
+      latestUpdates: "Nuutste Opdaterings",
     },
     en: {
       back: "Back to Category",
@@ -140,6 +159,7 @@ export default function BusinessDetail() {
       share: "Share this business",
       shareMessage: (name, desc, url) =>
         `Check out ${name} on Ons Brandfort Bulletin — ${desc}. View their details here: ${url}`,
+      latestUpdates: "Latest Updates",
     },
   };
 
@@ -321,6 +341,49 @@ export default function BusinessDetail() {
             </div>
           )}
         </div>
+
+        {/* Latest Updates */}
+        {updates.length > 0 && (
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 mb-6">
+            <h2 className="text-xl font-bold mb-4">📢 {t.latestUpdates}</h2>
+            <div className="space-y-3">
+              {updates.map((u) => {
+                const catLabel =
+                  UPDATE_CATEGORY_LABELS[u.category]?.[lang] || u.category;
+                return (
+                  <div
+                    key={u.id}
+                    className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden"
+                  >
+                    {u.image_url && (
+                      <div className="relative w-full h-44 bg-neutral-950">
+                        <Image
+                          src={u.image_url}
+                          alt={u.title}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-white text-sm">
+                          {u.title}
+                        </span>
+                        <span className="ml-auto text-xs uppercase tracking-wide text-orange-400 border border-orange-500/40 rounded-full px-2 py-0.5 flex-shrink-0">
+                          {catLabel}
+                        </span>
+                      </div>
+                      <p className="text-neutral-300 text-sm leading-relaxed">
+                        {u.body}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Reviews — visually separated */}
         <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5">

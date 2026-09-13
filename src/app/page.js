@@ -1,3 +1,4 @@
+// app/page.js
 "use client";
 import { useState } from "react";
 import { useEffect } from "react";
@@ -49,8 +50,12 @@ export default function Home() {
       ],
       glitchCafe: {
         title: "Glitch Cafe",
-        desc: "Speletjies vir 'n bietjie plesier — Battleship, Sudoku, Riddle Rush en meer.",
-        cta: "Speel Nou",
+        desc: "Speletjies vir 'n bietjie plesier.",
+      },
+      businessUpdates: {
+        title: "Besigheidsopdaterings",
+        desc: "Spesiale aanbiedinge, nuwe voorraad en nuus van plaaslike besighede.",
+        cta: "Kyk Nou",
       },
     },
     en: {
@@ -79,8 +84,12 @@ export default function Home() {
       ],
       glitchCafe: {
         title: "Glitch Cafe",
-        desc: "Local games for a bit of fun — Battleship, Sudoku, Riddle Rush and more.",
-        cta: "Play Now",
+        desc: "Local games for a bit of fun.",
+      },
+      businessUpdates: {
+        title: "Business Updates",
+        desc: "Specials, new stock, and news from local businesses.",
+        cta: "View Now",
       },
     },
   };
@@ -291,38 +300,56 @@ export default function Home() {
           </div>
         </Link>
 
+        {/* Business Updates — gold/amber to tie in with pinned crown treatment */}
         <Link
-          href="/games"
+          href="/business-updates"
           className="block relative rounded-2xl p-5 mb-4 overflow-hidden border-2 transition hover:scale-[1.01]"
           style={{
-            borderColor: "#a855f7",
+            borderColor: "#f59e0b",
             background:
-              "linear-gradient(135deg, rgba(34,211,238,0.15), rgba(168,85,247,0.15), rgba(236,72,153,0.15)), #0a0a0a",
-            boxShadow: "0 0 24px rgba(168,85,247,0.35)",
+              "linear-gradient(135deg, rgba(245,158,11,0.18), rgba(234,88,12,0.12)), #0a0a0a",
+            boxShadow: "0 0 24px rgba(245,158,11,0.3)",
           }}
         >
           <div className="flex items-center gap-4">
-            <span className="text-4xl">🕹️</span>
+            <span className="text-4xl">📢</span>
             <div className="flex-1 min-w-0">
-              <h2
-                className="text-xl font-black uppercase tracking-wide"
-                style={{
-                  background: "linear-gradient(90deg, #22d3ee, #a855f7, #ec4899)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                {t.glitchCafe.title}
+              <h2 className="text-xl font-black uppercase tracking-wide text-amber-400">
+                {t.businessUpdates.title}
               </h2>
-              <p className="text-sm text-neutral-400 mt-1">{t.glitchCafe.desc}</p>
+              <p className="text-sm text-neutral-400 mt-1">{t.businessUpdates.desc}</p>
             </div>
-            <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full bg-purple-500 text-black flex-shrink-0">
-              {t.glitchCafe.cta}
+            <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full bg-amber-400 text-black flex-shrink-0">
+              {t.businessUpdates.cta}
             </span>
           </div>
         </Link>
 
         <div className="grid grid-cols-2 gap-3">
+          {/* Glitch Cafe — same small square shape as other cards, purple identity kept */}
+          <Link
+            href="/games"
+            className="rounded-xl p-4 flex flex-col items-center text-center gap-1 border-2 transition hover:scale-[1.01]"
+            style={{
+              borderColor: "#a855f7",
+              background:
+                "linear-gradient(135deg, rgba(34,211,238,0.15), rgba(168,85,247,0.15), rgba(236,72,153,0.15)), #0a0a0a",
+            }}
+          >
+            <span className="text-3xl">🕹️</span>
+            <h2
+              className="text-sm font-black uppercase tracking-wide"
+              style={{
+                background: "linear-gradient(90deg, #22d3ee, #a855f7, #ec4899)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              {t.glitchCafe.title}
+            </h2>
+            <p className="text-xs text-neutral-500">{t.glitchCafe.desc}</p>
+          </Link>
+
           {t.cards.map((c) => (
             <Link
               key={c.href}

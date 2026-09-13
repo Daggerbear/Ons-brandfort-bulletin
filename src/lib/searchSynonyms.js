@@ -17,6 +17,22 @@ const SYNONYM_GROUPS = [
   ["trailer hire", "sleepwa huur", "utility trailers", "trailer rental"],
   ["towing", "insleep", "insleepdiens", "breakdown", "wegsleep", "sleepwa", "vehicle recovery", "long distance towing"],
 
+// Kids entertainment:
+  [
+ "kids entertainment",
+ "children's entertainment",
+ "party hire",
+ "jumping castle",
+ "jumping castles",
+ "inflatable",
+ "inflatables",
+ "water slide",
+ "water slides",
+ "party games",
+ "kids party",
+ "birthday party"
+ ],
+  
   // Automotive
   ["mechanic", "werktuigkundige", "car repair", "motor", "gearbox", "brakes", "remme", "engine", "enjin", "mechanical workshop", "vehicle servicing", "diagnostic repairs", "engine overhaul"],
   ["panelbeater", "paneelklopper", "dent", "duik", "spray paint", "panel beating", "auto wiring"],

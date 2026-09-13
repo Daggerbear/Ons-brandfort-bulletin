@@ -1,3 +1,4 @@
+// app/sitemap.js
 export default async function sitemap() {
   const baseUrl = 'https://ons-brandfort-bulletin.vercel.app'
 
@@ -9,6 +10,8 @@ export default async function sitemap() {
     '/jobs',
     '/emergency',
     '/games',
+    '/business-updates',
+    '/business-updates/submit',
     '/list-your-business',
     '/list-your-event',
     '/terms',
