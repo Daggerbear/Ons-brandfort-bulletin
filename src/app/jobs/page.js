@@ -1,18 +1,59 @@
+// src/app/jobs/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { SkeletonList, SkeletonPostCard } from "@/components/Skeleton";
 
-const CATEGORIES = {
-  af: ["Ander", "Huiswerk", "Plaaswerk", "Kleinhandel", "Ambagte", "Admin/Kantoor", "Gasvryheid", "Bestuur", "Sekuriteit"],
-  en: ["Other", "Domestic Work", "Farm Work", "Retail", "Trades", "Admin/Office", "Hospitality", "Driving", "Security"],
-};
+// `value` is what gets stored in the database (English). af/en are display labels.
+const CATEGORIES = [
+  { value: "Other", af: "Ander", en: "Other" },
+  { value: "Domestic Work", af: "Huiswerk", en: "Domestic Work" },
+  { value: "Farm Work", af: "Plaaswerk", en: "Farm Work" },
+  { value: "Retail", af: "Kleinhandel", en: "Retail" },
+  { value: "Trades", af: "Ambagte", en: "Trades" },
+  { value: "Admin/Office", af: "Admin/Kantoor", en: "Admin/Office" },
+  { value: "Hospitality", af: "Gasvryheid", en: "Hospitality" },
+  { value: "Driving", af: "Bestuur", en: "Driving" },
+  { value: "Security", af: "Sekuriteit", en: "Security" },
+];
+
+// Works for old rows too (which may have stored the Afrikaans label)
+function categoryLabel(raw, lang) {
+  const c = CATEGORIES.find((c) => c.value === raw || c.af === raw || c.en === raw);
+  return c ? c[lang] : raw;
+}
+
+function waLink(number, msg) {
+  let digits = (number || "").replace(/\D/g, "");
+  if (digits.startsWith("0")) digits = "27" + digits.slice(1);
+  else if (!digits.startsWith("27")) digits = "27" + digits;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+}
+
+function timeAgo(dateStr, lang) {
+  if (!dateStr) return "";
+  const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  const units = [
+    { s: 31536000, af: "j", en: "y" },
+    { s: 2592000, af: "m", en: "mo" },
+    { s: 86400, af: "d", en: "d" },
+    { s: 3600, af: "u", en: "h" },
+    { s: 60, af: "min", en: "m" },
+  ];
+  for (const u of units) {
+    const val = Math.floor(seconds / u.s);
+    if (val >= 1) return `${val}${lang === "af" ? u.af : u.en}`;
+  }
+  return lang === "af" ? "nou" : "now";
+}
 
 const text = {
   af: {
     title: "Werk",
+    sub: "Vind werk of plaas 'n vakature in Brandfort.",
     disclaimer: "Kontak direk via WhatsApp — Bulletin is nie betrokke by aanstellingsbesluite of ooreenkomste nie.",
     privacyNote: "Deur te plaas, stem jy in tot ons",
     privacyLink: "privaatheidsbeleid",
@@ -39,13 +80,15 @@ const text = {
     report: "🚩 Rapporteer",
     noJobs: "Nog geen vakatures nie.",
     noSeekers: "Niemand het nog beskikbaarheid gelys nie.",
-    loading: "Laai tans...",
+    beFirst: "Wees die eerste een!",
     confirmJob: "Merk hierdie werk as gevul?",
     confirmSeeker: "Merk jouself as nie meer beskikbaar nie?",
+    errorPost: "Kon nie jou plasing plaas nie. Probeer asseblief weer.",
     whatsappMsg: (title) => `Hi, ek het jou "${title}" plasing op Ons Brandfort Bulletin gesien`,
   },
   en: {
     title: "Jobs",
+    sub: "Find work or post a vacancy in Brandfort.",
     disclaimer: "Connect directly via WhatsApp — Bulletin isn't involved in hiring decisions or agreements.",
     privacyNote: "By posting, you agree to our",
     privacyLink: "privacy policy",
@@ -72,9 +115,10 @@ const text = {
     report: "🚩 Report",
     noJobs: "No job openings yet.",
     noSeekers: "No one's listed availability yet.",
-    loading: "Loading...",
+    beFirst: "Be the first!",
     confirmJob: "Mark this job as filled?",
     confirmSeeker: "Mark yourself as no longer available?",
+    errorPost: "Couldn't post your listing. Please try again.",
     whatsappMsg: (title) => `Hi, I saw your "${title}" listing on Ons Brandfort Bulletin`,
   },
 };
@@ -86,6 +130,7 @@ export default function Jobs() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [myListings, setMyListings] = useState([]);
 
   const [name, setName] = useState("");
@@ -95,7 +140,6 @@ export default function Jobs() {
   const [category, setCategory] = useState("Other");
 
   const t = text[lang];
-  const categories = CATEGORIES[lang];
 
   useEffect(() => {
     fetchListings();
@@ -118,6 +162,7 @@ export default function Jobs() {
     e.preventDefault();
     if (!name.trim() || !whatsapp.trim() || !title.trim() || !description.trim()) return;
     setSubmitting(true);
+    setErrorMsg("");
 
     const { data, error } = await supabase
       .from("jobs")
@@ -146,7 +191,8 @@ export default function Jobs() {
       setCategory("Other");
       fetchListings();
     } else {
-      alert("Something went wrong posting your listing.");
+      console.log("Error posting listing:", error);
+      setErrorMsg(t.errorPost);
     }
   }
 
@@ -173,95 +219,164 @@ export default function Jobs() {
     }
   }
 
-  const filtered = listings.filter((l) => l.type === activeTab);
+  const openCount = (type) =>
+    listings.filter((l) => l.type === type && !l.is_filled).length;
+
+  // Filled listings sink to the bottom; order otherwise stays newest-first
+  const filtered = listings
+    .filter((l) => l.type === activeTab)
+    .sort((a, b) => Number(!!a.is_filled) - Number(!!b.is_filled));
+
+  const inputClass =
+    "w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500";
 
   return (
-    <main className="min-h-screen bg-carbon text-white">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
       <Nav lang={lang} />
 
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-orange-400">{t.title}</h1>
+      <header
+        className="border-b border-orange-900/60 px-4 pt-6 pb-6"
+        style={{
+          background: "radial-gradient(circle at 20% 0%, #7c2d12, #0a0a0a 75%)",
+        }}
+      >
+        <div className="max-w-2xl mx-auto flex justify-between items-start gap-3">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
+              💼 <span className="text-orange-400">{t.title}</span>
+            </h1>
+            <p className="text-sm text-neutral-300 mt-1">{t.sub}</p>
+          </div>
           <button
             onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
+            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-400 hover:text-orange-400 transition flex-shrink-0"
           >
             {lang === "af" ? "English" : "Afrikaans"}
           </button>
         </div>
-        <p className="text-neutral-500 text-sm mb-2">{t.disclaimer}</p>
-        <p className="text-neutral-600 text-xs mb-6">
-          {t.privacyNote}{" "}
-          <a href="/privacy" className="underline hover:text-orange-400">
-            {t.privacyLink}
-          </a>.
-        </p>
+      </header>
 
-        <div className="flex gap-2 mb-6">
+      <div className="max-w-2xl mx-auto px-4 py-5 pb-16 flex-1 w-full">
+        {/* Disclaimer */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 mb-5">
+          <p className="text-neutral-300 text-sm">ℹ️ {t.disclaimer}</p>
+          <p className="text-neutral-500 text-xs mt-1">
+            {t.privacyNote}{" "}
+            <Link href="/privacy" className="underline hover:text-orange-400">
+              {t.privacyLink}
+            </Link>
+            .
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
           <button
-            onClick={() => { setActiveTab("job"); setShowForm(false); }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition ${
-              activeTab === "job" ? "bg-orange-500 text-white" : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+            onClick={() => {
+              setActiveTab("job");
+              setShowForm(false);
+              setErrorMsg("");
+            }}
+            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${
+              activeTab === "job"
+                ? "bg-orange-500 text-white"
+                : "bg-neutral-900 text-neutral-400 border border-neutral-800"
             }`}
           >
             {t.tabJob}
+            {!loading && ` (${openCount("job")})`}
           </button>
           <button
-            onClick={() => { setActiveTab("seeker"); setShowForm(false); }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition ${
-              activeTab === "seeker" ? "bg-orange-500 text-white" : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+            onClick={() => {
+              setActiveTab("seeker");
+              setShowForm(false);
+              setErrorMsg("");
+            }}
+            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${
+              activeTab === "seeker"
+                ? "bg-orange-500 text-white"
+                : "bg-neutral-900 text-neutral-400 border border-neutral-800"
             }`}
           >
             {t.tabSeeker}
+            {!loading && ` (${openCount("seeker")})`}
           </button>
         </div>
 
+        {/* Post button */}
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="w-full bg-neutral-800 hover:bg-neutral-700 transition rounded-xl py-3 font-semibold mb-6 border border-neutral-700"
+          onClick={() => {
+            setShowForm(!showForm);
+            setErrorMsg("");
+          }}
+          className={`w-full transition rounded-xl py-3 font-semibold mb-5 ${
+            showForm
+              ? "bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
+              : "bg-orange-500 hover:bg-orange-600 text-white"
+          }`}
         >
           {showForm ? t.cancel : activeTab === "job" ? t.postJob : t.postSeeker}
         </button>
 
+        {/* Form */}
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-8 space-y-3">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-neutral-900 border border-orange-500/30 rounded-2xl p-5 mb-6 space-y-3"
+          >
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t.name}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+              maxLength={40}
+              required
+              className={inputClass}
             />
             <input
               type="text"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder={t.whatsapp}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+              maxLength={20}
+              required
+              className={inputClass}
             />
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={activeTab === "job" ? t.jobTitlePlaceholder : t.seekerTitlePlaceholder}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+              maxLength={80}
+              required
+              className={inputClass}
             />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={activeTab === "job" ? t.jobDescPlaceholder : t.seekerDescPlaceholder}
               rows={3}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+              maxLength={600}
+              required
+              className={inputClass}
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+              className={inputClass}
             >
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c[lang]}
+                </option>
               ))}
             </select>
+
+            {errorMsg && (
+              <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-sm rounded-lg px-4 py-3">
+                ⚠️ {errorMsg}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -273,32 +388,48 @@ export default function Jobs() {
           </form>
         )}
 
-        {loading && <p className="text-neutral-500">{t.loading}</p>}
+        {loading && <SkeletonList Component={SkeletonPostCard} count={3} />}
 
+        {/* Listings */}
         <div className="space-y-4">
           {filtered.map((item) => (
-            <div
+            <article
               key={item.id}
-              className={`bg-neutral-900 border border-neutral-800 rounded-xl p-4 ${item.is_filled ? "opacity-50" : ""}`}
+              className={`bg-neutral-900 border border-neutral-800 rounded-2xl p-4 ${
+                item.is_filled ? "opacity-50" : ""
+              }`}
             >
-              <div className="flex justify-between items-start">
-                <h2 className="font-semibold text-lg">{item.title}</h2>
+              <div className="flex justify-between items-start gap-3">
+                <h2 className="font-bold text-lg leading-tight break-words min-w-0">
+                  {item.title}
+                </h2>
                 {item.is_filled && (
-                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
+                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex-shrink-0">
                     {activeTab === "job" ? t.filled : t.unavailable}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-neutral-400 mt-1">{item.description}</p>
-              <p className="text-xs text-neutral-500 mt-2">{item.category} · {t.by} {item.name}</p>
 
-              <div className="flex gap-3 mt-3 flex-wrap">
+              <p className="text-sm text-neutral-300 mt-2 leading-relaxed whitespace-pre-line break-words">
+                {item.description}
+              </p>
+
+              <div className="flex items-center flex-wrap gap-2 mt-3">
+                <span className="text-xs font-semibold text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-full px-2.5 py-0.5">
+                  {categoryLabel(item.category, lang)}
+                </span>
+                <span className="text-xs text-neutral-500">
+                  {t.by} {item.name} · {timeAgo(item.created_at, lang)}
+                </span>
+              </div>
+
+              <div className="flex gap-3 mt-4 flex-wrap items-center">
                 {!item.is_filled && (
                   <a
-                    href={`https://wa.me/27${item.whatsapp.replace(/^0/, "").replace(/\D/g, "")}?text=${encodeURIComponent(t.whatsappMsg(item.title))}`}
+                    href={waLink(item.whatsapp, t.whatsappMsg(item.title))}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-green-600 hover:bg-green-700 transition text-sm px-4 py-2 rounded-lg"
+                    className="bg-green-600 hover:bg-green-700 transition text-sm font-semibold px-4 py-2 rounded-lg"
                   >
                     {t.whatsappBtn}
                   </a>
@@ -313,19 +444,23 @@ export default function Jobs() {
                 )}
                 <button
                   onClick={() => flagListing(item.id)}
-                  className="text-sm text-neutral-600 hover:text-red-400 ml-auto"
+                  className="text-xs text-neutral-600 hover:text-red-400 ml-auto"
                 >
                   {t.report}
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
         {!loading && filtered.length === 0 && (
-          <p className="text-neutral-600 text-center mt-10">
-            {activeTab === "job" ? t.noJobs : t.noSeekers}
-          </p>
+          <div className="text-center py-12">
+            <div className="text-5xl mb-3">{activeTab === "job" ? "💼" : "🙋"}</div>
+            <p className="text-neutral-400 text-sm mb-1">
+              {activeTab === "job" ? t.noJobs : t.noSeekers}
+            </p>
+            <p className="text-neutral-500 text-sm">{t.beFirst}</p>
+          </div>
         )}
       </div>
 

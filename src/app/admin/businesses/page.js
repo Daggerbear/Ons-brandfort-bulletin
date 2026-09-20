@@ -1,21 +1,37 @@
+// src/app/admin/businesses/page.js
 "use client";
-
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import Image from "next/image";
+import AdminBusinessCard from "@/components/AdminBusinessCard";
+import { getCategoryByName } from "@/lib/categories";
 
-const CATEGORIES = [
-  "Agriculture",
-  "Automotive",
-  "Beauty & Spa",
-  "Food & Dining",
-  "Health & Medical",
-  "Home Services",
-  "Professional Services",
-  "Retail & Shopping",
-  "Other",
-];
+const EXT_BY_TYPE = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+
+// Shrink logos to max 512px. Keeps PNG/WEBP transparency.
+async function compressLogo(file, maxSize = 512, quality = 0.85) {
+  try {
+    if (!file.type.startsWith("image/")) return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const outType = EXT_BY_TYPE[file.type] ? file.type : "image/jpeg";
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, outType, quality)
+    );
+    if (!blob || blob.size >= file.size) return file;
+    return blob;
+  } catch {
+    return file;
+  }
+}
 
 export default function AdminBusinesses() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -27,6 +43,12 @@ export default function AdminBusinesses() {
   const [expandedId, setExpandedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("pending");
+  const [toast, setToast] = useState(null);
+
+  const notify = (msg, ok = true) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 2500);
+  };
 
   useEffect(() => {
     if (sessionStorage.getItem("adminAuth") === "true") {
@@ -63,26 +85,47 @@ export default function AdminBusinesses() {
   }, [authenticated]);
 
   const updateBusiness = async (id, field, value) => {
-    await supabase
+    const { error } = await supabase
       .from("businesses")
       .update({ [field]: value })
       .eq("id", id);
+
+    if (error) {
+      console.log("Update error:", error);
+      notify(`Save failed: ${error.message}`, false);
+      return false;
+    }
+
     setBusinesses((prev) =>
       prev.map((b) => (b.id === id ? { ...b, [field]: value } : b))
     );
+    notify("Saved ✓");
+    return true;
   };
 
   const approveBusiness = async (id) => {
-    await supabase
+    const { error } = await supabase
       .from("businesses")
       .update({ Status: "approved" })
       .eq("id", id);
+
+    if (error) {
+      notify(`Approve failed: ${error.message}`, false);
+      return;
+    }
+    notify("Approved ✓");
     loadData();
   };
 
   const rejectBusiness = async (id) => {
     if (!confirm("Delete this business? This cannot be undone.")) return;
-    await supabase.from("businesses").delete().eq("id", id);
+    const { error } = await supabase.from("businesses").delete().eq("id", id);
+
+    if (error) {
+      notify(`Delete failed: ${error.message}`, false);
+      return;
+    }
+    notify("Deleted");
     loadData();
   };
 
@@ -90,15 +133,17 @@ export default function AdminBusinesses() {
     if (!file) return;
     setUploadingId(bizId);
 
-    const fileExt = file.name.split(".").pop();
+    const uploadFile = await compressLogo(file);
+    const contentType = uploadFile.type || file.type;
+    const fileExt = EXT_BY_TYPE[contentType] || file.name.split(".").pop() || "png";
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from("business_logos")
-      .upload(fileName, file);
+      .upload(fileName, uploadFile, { contentType });
 
     if (uploadError) {
-      alert("Logo upload failed: " + uploadError.message);
+      notify(`Logo upload failed: ${uploadError.message}`, false);
       setUploadingId(null);
       return;
     }
@@ -117,6 +162,10 @@ export default function AdminBusinesses() {
   );
   const approvedCount = useMemo(
     () => businesses.filter((b) => b.Status === "approved").length,
+    [businesses]
+  );
+  const unknownCategoryCount = useMemo(
+    () => businesses.filter((b) => b.category && !getCategoryByName(b.category)).length,
     [businesses]
   );
 
@@ -147,13 +196,17 @@ export default function AdminBusinesses() {
     );
   }
 
+  const tabClass = (name) =>
+    `flex-1 py-2 rounded-lg text-sm font-semibold transition ${
+      filter === name
+        ? "bg-orange-500 text-black"
+        : "bg-neutral-900 border border-neutral-800 text-neutral-400"
+    }`;
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-6 py-10">
       <div className="max-w-2xl mx-auto">
-        <Link
-          href="/admin"
-          className="text-sm text-orange-400 hover:text-orange-300"
-        >
+        <Link href="/admin" className="text-sm text-orange-400 hover:text-orange-300">
           ← Terug na Admin Panel
         </Link>
         <h1 className="text-3xl font-bold mb-2 mt-4">Businesses</h1>
@@ -162,6 +215,15 @@ export default function AdminBusinesses() {
           business card to turn online ordering on or off, edit items and
           prices, or set collection and delivery.
         </p>
+
+        {unknownCategoryCount > 0 && (
+          <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
+            ⚠️ {unknownCategoryCount} business
+            {unknownCategoryCount === 1 ? " has" : "es have"} a category that
+            isn't in the current list. Look for the red text and pick a new
+            category.
+          </div>
+        )}
 
         <input
           type="text"
@@ -172,34 +234,13 @@ export default function AdminBusinesses() {
         />
 
         <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setFilter("pending")}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-              filter === "pending"
-                ? "bg-orange-500 text-black"
-                : "bg-neutral-900 border border-neutral-800 text-neutral-400"
-            }`}
-          >
+          <button onClick={() => setFilter("pending")} className={tabClass("pending")}>
             Pending {pendingCount > 0 && `(${pendingCount})`}
           </button>
-          <button
-            onClick={() => setFilter("approved")}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-              filter === "approved"
-                ? "bg-orange-500 text-black"
-                : "bg-neutral-900 border border-neutral-800 text-neutral-400"
-            }`}
-          >
+          <button onClick={() => setFilter("approved")} className={tabClass("approved")}>
             Approved ({approvedCount})
           </button>
-          <button
-            onClick={() => setFilter("all")}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-              filter === "all"
-                ? "bg-orange-500 text-black"
-                : "bg-neutral-900 border border-neutral-800 text-neutral-400"
-            }`}
-          >
+          <button onClick={() => setFilter("all")} className={tabClass("all")}>
             All ({businesses.length})
           </button>
         </div>
@@ -212,207 +253,34 @@ export default function AdminBusinesses() {
         )}
 
         <div className="space-y-3">
-          {filteredBusinesses.map((b) => {
-            const isExpanded = expandedId === b.id;
-            const isPending = b.Status !== "approved";
-
-            return (
-              <div
-                key={b.id}
-                className={`bg-neutral-900 border rounded-xl overflow-hidden transition ${
-                  isPending ? "border-orange-500/50" : "border-neutral-800"
-                }`}
-              >
-                {/* Collapsed row — always visible */}
-                <button
-                  onClick={() => setExpandedId(isExpanded ? null : b.id)}
-                  className="w-full flex items-center gap-3 p-4 text-left"
-                >
-                  {b.logo_url ? (
-                    <Image
-                      src={b.logo_url}
-                      alt={`${b.name} logo`}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-cover rounded-lg border border-neutral-800 flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-white truncate">{b.name}</p>
-                    <p className="text-xs text-neutral-500">{b.category}</p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ${
-                      isPending
-                        ? "bg-orange-500/20 text-orange-400"
-                        : "bg-green-600/20 text-green-400"
-                    }`}
-                  >
-                    {isPending ? "Pending" : "Approved"}
-                  </span>
-                  <span className="text-neutral-500 text-sm flex-shrink-0">
-                    {isExpanded ? "▲" : "▼"}
-                  </span>
-                </button>
-
-                {/* Expanded edit form */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-neutral-800 pt-4">
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-neutral-500">
-                          Online menu
-                        </p>
-                        <p
-                          className={`text-sm font-semibold mt-1 ${menuStates[b.id] ? "text-green-400" : "text-neutral-400"}`}
-                        >
-                          {menuStates[b.id] ? "Live" : "Not enabled"}
-                        </p>
-                      </div>
-                      <Link
-                        href={`/admin/businesses/${b.id}/menu`}
-                        className="shrink-0 bg-orange-500 hover:bg-orange-600 transition text-white rounded-lg px-3 py-2 text-sm font-semibold"
-                      >
-                        Manage menu
-                      </Link>
-                    </div>
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Logo
-                    </label>
-                    <div className="flex items-center gap-3 mb-3">
-                      <label className="text-sm bg-neutral-800 hover:bg-neutral-700 transition rounded-lg px-3 py-2 cursor-pointer">
-                        {uploadingId === b.id ? "Uploading..." : "Change logo"}
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          className="hidden"
-                          disabled={uploadingId === b.id}
-                          onChange={(e) => handleLogoChange(b.id, e.target.files[0])}
-                        />
-                      </label>
-                    </div>
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Name
-                    </label>
-                    <input
-                      defaultValue={b.name}
-                      onBlur={(e) => updateBusiness(b.id, "name", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Category
-                    </label>
-                    <select
-                      value={b.category || ""}
-                      onChange={(e) => updateBusiness(b.id, "category", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    >
-                      <option value="" disabled>
-                        Choose a category...
-                      </option>
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      defaultValue={b.description}
-                      onBlur={(e) =>
-                        updateBusiness(b.id, "description", e.target.value)
-                      }
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Contact
-                    </label>
-                    <input
-                      defaultValue={b.contact}
-                      onBlur={(e) => updateBusiness(b.id, "contact", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://..."
-                      defaultValue={b.website}
-                      onBlur={(e) => updateBusiness(b.id, "website", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Address
-                    </label>
-                    <input
-                      defaultValue={b.address}
-                      onBlur={(e) => updateBusiness(b.id, "address", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Hours
-                    </label>
-                    <input
-                      defaultValue={b.hours}
-                      onBlur={(e) => updateBusiness(b.id, "hours", e.target.value)}
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-3 text-white"
-                    />
-
-                    <label className="block text-xs text-neutral-500 mb-1">
-                      Services (comma-separated, e.g. geyser repair, drains, burst pipes)
-                    </label>
-                    <input
-                      defaultValue={b.services?.join(", ") || ""}
-                      onBlur={(e) =>
-                        updateBusiness(
-                          b.id,
-                          "services",
-                          e.target.value
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean)
-                        )
-                      }
-                      placeholder="geyser repair, drains, burst pipes"
-                      className="w-full bg-neutral-800 rounded px-3 py-2 mb-4 text-white"
-                    />
-
-                    <div className="flex gap-2">
-                      {isPending && (
-                        <button
-                          onClick={() => approveBusiness(b.id)}
-                          className="bg-green-600 hover:bg-green-700 transition px-4 py-2 rounded-lg text-sm font-semibold"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      <button
-                        onClick={() => rejectBusiness(b.id)}
-                        className="bg-red-600 hover:bg-red-700 transition px-4 py-2 rounded-lg text-sm font-semibold"
-                      >
-                        {isPending ? "Reject" : "Delete"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {filteredBusinesses.map((b) => (
+            <AdminBusinessCard
+              key={b.id}
+              b={b}
+              expanded={expandedId === b.id}
+              onToggle={() => setExpandedId(expandedId === b.id ? null : b.id)}
+              menuLive={!!menuStates[b.id]}
+              uploading={uploadingId === b.id}
+              onUpdate={(field, value) => updateBusiness(b.id, field, value)}
+              onApprove={() => approveBusiness(b.id)}
+              onReject={() => rejectBusiness(b.id)}
+              onLogoChange={(file) => handleLogoChange(b.id, file)}
+            />
+          ))}
         </div>
       </div>
+
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-4 right-4 z-50 mx-auto max-w-sm rounded-xl border px-4 py-3 text-sm text-center shadow-lg ${
+            toast.ok
+              ? "bg-neutral-900 border-green-500/50 text-green-300"
+              : "bg-red-950 border-red-500/60 text-red-300"
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
     </main>
   );
 }

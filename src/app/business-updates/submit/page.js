@@ -1,9 +1,11 @@
+// app/business-updates/submit/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { extractYoutubeId } from "@/lib/youtube";
 
 const CATEGORIES = [
   { af: "Spesiaal", en: "Special" },
@@ -26,7 +28,9 @@ export default function SubmitBusinessUpdate() {
     title: "",
     body: "",
     category: "",
+    youtube_url: "",
   });
+  const [videoError, setVideoError] = useState("");
 
   useEffect(() => {
     const loadBusinesses = async () => {
@@ -54,6 +58,9 @@ export default function SubmitBusinessUpdate() {
       body: "Besonderhede",
       image: "Prent",
       imageHint: "Opsioneel — PNG, JPG of WEBP",
+      video: "YouTube Video",
+      videoHint: "Opsioneel — plak 'n YouTube skakel",
+      videoInvalid: "Kon nie 'n geldige YouTube skakel herken nie",
       submit: "Dien In",
       submitting: "Besig...",
       thanks: "Dankie! Jou opdatering wag nou vir goedkeuring.",
@@ -73,6 +80,9 @@ export default function SubmitBusinessUpdate() {
       body: "Details",
       image: "Image",
       imageHint: "Optional — PNG, JPG or WEBP",
+      video: "YouTube Video",
+      videoHint: "Optional — paste a YouTube link",
+      videoInvalid: "Couldn't recognize a valid YouTube link",
       submit: "Submit",
       submitting: "Submitting...",
       thanks: "Thanks! Your update is now pending approval.",
@@ -85,6 +95,7 @@ export default function SubmitBusinessUpdate() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (e.target.name === "youtube_url") setVideoError("");
   };
 
   const handleImageChange = (e) => {
@@ -100,6 +111,15 @@ export default function SubmitBusinessUpdate() {
     if (!form.business_id) {
       alert(t.required);
       return;
+    }
+
+    let youtube_id = null;
+    if (form.youtube_url.trim()) {
+      youtube_id = extractYoutubeId(form.youtube_url.trim());
+      if (!youtube_id) {
+        setVideoError(t.videoInvalid);
+        return;
+      }
     }
 
     setUploading(true);
@@ -135,6 +155,7 @@ export default function SubmitBusinessUpdate() {
         body: form.body,
         category: form.category,
         image_url: image_url,
+        youtube_id: youtube_id,
       },
     ]);
 
@@ -264,6 +285,23 @@ export default function SubmitBusinessUpdate() {
                     alt="Preview"
                     className="mt-3 w-20 h-20 object-cover rounded-lg border border-neutral-800"
                   />
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm text-neutral-400 mb-1">
+                  {t.video} <span className="text-neutral-600">({t.videoHint})</span>
+                </label>
+                <input
+                  type="text"
+                  name="youtube_url"
+                  value={form.youtube_url}
+                  onChange={handleChange}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-orange-500 outline-none"
+                />
+                {videoError && (
+                  <p className="text-xs text-red-400 mt-1">{videoError}</p>
                 )}
               </div>
 

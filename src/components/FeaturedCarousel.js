@@ -97,9 +97,12 @@ export default function FeaturedCarousel({ lang }) {
 
         <Link
           href={linkHref}
-          className="block relative bg-neutral-900 border border-orange-500/60 rounded-2xl overflow-hidden transition hover:border-orange-500"
-          style={{ boxShadow: "0 0 32px rgba(249,115,22,0.18)" }}
+          className="block relative bg-neutral-900 border-2 border-yellow-500/70 rounded-2xl overflow-hidden transition hover:border-yellow-400 shadow-lg shadow-yellow-500/10"
         >
+          <div className="flex items-center gap-1 bg-yellow-500 text-black text-xs font-bold uppercase tracking-wide px-3 py-1">
+            👑 {t.featured}
+          </div>
+
           {displayImage && (
             <div className="relative w-full bg-black" style={{ aspectRatio: "3 / 2" }}>
               <Image
@@ -114,10 +117,7 @@ export default function FeaturedCarousel({ lang }) {
 
           {!hasCustomFlyer && (
             <div className="p-4 pt-3">
-              <span className="text-xs px-2 py-1 rounded-full bg-orange-500 text-black font-semibold">
-                {t.featured}
-              </span>
-              <h3 className="text-lg font-semibold text-orange-400 mt-2">{name}</h3>
+              <h3 className="text-lg font-semibold text-orange-400">{name}</h3>
               {description && (
                 <p className="text-sm text-neutral-400 mt-1 line-clamp-2">{description}</p>
               )}

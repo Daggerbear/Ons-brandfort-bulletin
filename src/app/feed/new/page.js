@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { extractYoutubeId } from "@/lib/youtube";
 
 const categories = [
   { value: "question", af: "Vra", en: "Question" },
@@ -27,6 +28,7 @@ export default function NewPost() {
   const [category, setCategory] = useState("question");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -36,10 +38,12 @@ export default function NewPost() {
       namePlaceholder: "Jou naam",
       contentPlaceholder: "Wat wil jy sê?",
       choosePhoto: "Kies foto",
+      videoPlaceholder: "YouTube skakel (opsioneel)",
       submit: "Plaas",
       submitting: "Stuur...",
       fillIn: "Vul asseblief alles in.",
       photoFail: "Foto oplaai het misluk.",
+      videoInvalid: "Kon nie 'n geldige YouTube skakel herken nie.",
       wrong: "Iets het verkeerd gegaan.",
       rulesTitle: "📋 Feed Reëls",
       rules: [
@@ -58,10 +62,12 @@ export default function NewPost() {
       namePlaceholder: "Your name",
       contentPlaceholder: "What do you want to say?",
       choosePhoto: "Choose photo",
+      videoPlaceholder: "YouTube link (optional)",
       submit: "Post",
       submitting: "Posting...",
       fillIn: "Please fill in all fields.",
       photoFail: "Photo upload failed.",
+      videoInvalid: "Couldn't recognize a valid YouTube link.",
       wrong: "Something went wrong.",
       rulesTitle: "📋 Feed Rules",
       rules: [
@@ -84,6 +90,15 @@ export default function NewPost() {
     if (!name.trim() || !content.trim()) {
       setError(t.fillIn);
       return;
+    }
+
+    let youtube_id = null;
+    if (youtubeUrl.trim()) {
+      youtube_id = extractYoutubeId(youtubeUrl.trim());
+      if (!youtube_id) {
+        setError(t.videoInvalid);
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -115,6 +130,7 @@ export default function NewPost() {
       category,
       content: content.trim(),
       image_url,
+      youtube_id,
     });
 
     setSubmitting(false);
@@ -199,6 +215,14 @@ export default function NewPost() {
               />
             </label>
           </div>
+
+          <input
+            type="text"
+            placeholder={t.videoPlaceholder}
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white"
+          />
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 

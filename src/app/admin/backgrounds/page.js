@@ -1,3 +1,4 @@
+// src/app/admin/backgrounds/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
@@ -5,9 +6,37 @@ import Link from "next/link";
 
 const KNOWN_KEYS = [
   { key: "homepage_hero", label: "Homepage Hero Background" },
+  { key: "homepage_logo", label: "Homepage Logo" },
+  { key: "business_zone_bg", label: "Business Zone Background" },
+  { key: "community_zone_bg", label: "Community Zone Background" },
+  { key: "emergency_zone_bg", label: "Emergency Zone Background" },
   { key: "games_hero", label: "Game Room Background" },
   { key: "games_logo", label: "Game Room Logo" },
 ];
+
+// Logos keep their original format so transparency isn't lost
+const NO_COMPRESS = ["homepage_logo", "games_logo"];
+
+// Resize to max 1600px wide and save as a light JPEG.
+// If anything goes wrong, or it wouldn't get smaller, the original file is used.
+async function compressImage(file, maxWidth = 1600, quality = 0.8) {
+  try {
+    if (!file.type.startsWith("image/")) return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxWidth / bitmap.width);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality)
+    );
+    if (!blob || blob.size >= file.size) return file;
+    return blob;
+  } catch {
+    return file;
+  }
+}
 
 export default function AdminBackgrounds() {
   const [images, setImages] = useState({});
@@ -35,11 +64,21 @@ export default function AdminBackgrounds() {
     if (!file) return;
     setUploadingKey(key);
 
-    const fileExt = file.name.split(".").pop();
+    let uploadFile = file;
+    if (!NO_COMPRESS.includes(key)) {
+      uploadFile = await compressImage(file);
+    }
+    const compressed = uploadFile !== file;
+
+    const fileExt = compressed ? "jpg" : file.name.split(".").pop();
     const fileName = `${key}-${Date.now()}.${fileExt}`;
     const { error: uploadError } = await supabase.storage
       .from("ads")
-      .upload(fileName, file);
+      .upload(
+        fileName,
+        uploadFile,
+        compressed ? { contentType: "image/jpeg" } : undefined
+      );
 
     if (uploadError) {
       alert("Upload failed.");
@@ -97,6 +136,7 @@ export default function AdminBackgrounds() {
                 <img
                   src={images[key]}
                   alt={label}
+                  loading="lazy"
                   className="rounded-lg mb-3 w-full max-h-40 object-cover"
                 />
               )}
