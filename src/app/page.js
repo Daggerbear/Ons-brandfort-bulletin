@@ -10,6 +10,7 @@ import FeaturedCarousel from "@/components/FeaturedCarousel";
 import LiveTicker from "@/components/LiveTicker";
 import InstallButton from "@/components/InstallButton";
 import SiteReviews from "@/components/SiteReviews";
+import WeatherWidget from "@/components/WeatherWidget";
 import { trackEvent } from "@/lib/analytics";
 
 const BUSINESS_FALLBACK = {
@@ -227,6 +228,8 @@ export default function Home() {
         </div>
       </header>
       <LiveTicker lang={lang} />
+
+      <WeatherWidget lang={lang} />
 
       <FeaturedCarousel lang={lang} />
 

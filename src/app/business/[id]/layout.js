@@ -1,15 +1,19 @@
 import { supabase } from "@/lib/supabase"
 
+const SITE_URL = "https://ons-brandfort-bulletin.vercel.app"
+
 export async function generateMetadata({ params }) {
   const { id } = await params
   const { data: business } = await supabase
     .from("businesses")
     .select("name, description, category, logo_url")
     .eq("id", id)
-    .single()
+    .eq("Status", "approved")
+    .maybeSingle()
 
   if (!business) {
     return {
+      metadataBase: new URL(SITE_URL),
       title: "Besigheid",
       description: "Besigheid nie gevind nie.",
     }
@@ -19,7 +23,10 @@ export async function generateMetadata({ params }) {
     ? business.description.slice(0, 160)
     : `${business.name} — ${business.category} in Brandfort.`
 
+  const image = business.logo_url || `${SITE_URL}/logo.png`
+
   return {
+    metadataBase: new URL(SITE_URL),
     title: business.name,
     description,
     alternates: {
@@ -29,7 +36,15 @@ export async function generateMetadata({ params }) {
       title: `${business.name} | Ons Brandfort Bulletin`,
       description,
       url: `/business/${id}`,
-      images: business.logo_url ? [{ url: business.logo_url }] : undefined,
+      siteName: "Ons Brandfort Bulletin",
+      type: "website",
+      images: [{ url: image }],
+    },
+    twitter: {
+      card: "summary",
+      title: `${business.name} | Ons Brandfort Bulletin`,
+      description,
+      images: [image],
     },
   }
 }

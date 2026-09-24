@@ -181,10 +181,8 @@ export default function BusinessDetail() {
       )}`
     : null;
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? window.location.href
-      : `https://ons-brandfort-bulletin.vercel.app/business/${id}`;
+  // Clean URL + UTM so shares show up under UTM Parameters in Vercel Analytics
+  const shareUrl = `https://ons-brandfort-bulletin.vercel.app/business/${id}?utm_source=whatsapp&utm_medium=share`;
   const shareDesc = business.category || business.description?.slice(0, 60) || "";
   const shareLink = `https://wa.me/?text=${encodeURIComponent(
     t.shareMessage(business.name, shareDesc, shareUrl)
@@ -291,6 +289,15 @@ export default function BusinessDetail() {
               </a>
             )}
           </div>
+          <a
+            href={shareLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent("business_share", { businessId: business.id })}
+            className="flex items-center justify-center gap-2 w-full border border-green-600/60 text-green-400 hover:bg-green-600 hover:text-white transition font-semibold rounded-lg px-4 py-3"
+          >
+            📤 {t.share}
+          </a>
         </div>
 
         <p className="text-neutral-300 mb-6 leading-relaxed whitespace-pre-line break-words">
@@ -393,15 +400,6 @@ export default function BusinessDetail() {
           onPosted={fetchReviews}
         />
 
-        <a
-          href={shareLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 text-sm text-neutral-400 hover:text-orange-400 border border-neutral-800 hover:border-orange-500/50 transition rounded-lg px-4 py-3 mt-6"
-        >
-          <span>📤</span>
-          {t.share}
-        </a>
       </div>
 
       <Footer lang={lang} />
