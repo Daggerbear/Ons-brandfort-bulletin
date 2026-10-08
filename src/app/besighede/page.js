@@ -8,6 +8,34 @@ import { expandQuery, tokenize, stem } from "@/lib/searchSynonyms";
 import { SkeletonList, SkeletonBusinessListRow, SkeletonText } from "@/components/Skeleton";
 import { CATEGORIES } from "@/lib/categories";
 
+// Normalise text for name matching: lowercase, strip accents (ê -> e),
+// drop apostrophes, turn & into "and", turn other punctuation into spaces.
+function norm(str) {
+  return (str || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/['\u2019`]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Direct business-name match. Works for the full name, part of the name,
+// the start of a word (partial typing) and names typed without spaces.
+function matchesName(business, query) {
+  const q = norm(query);
+  if (!q) return false;
+  const n = norm(business.name);
+  if (!n) return false;
+  if (n.includes(q)) return true;
+  if (n.replace(/ /g, "").includes(q.replace(/ /g, ""))) return true;
+  const nameWords = n.split(" ");
+  return q.split(" ").every((w) => nameWords.some((nw) => nw.startsWith(w)));
+}
+
 function matchesStructured(business, term) {
   const structuredText = [business.name, business.category, ...(business.services || [])]
     .join(" ")
@@ -99,16 +127,29 @@ export default function Besighede() {
   const isSearching = searchTerm.trim() !== "";
   const expandedTerms = expandQuery(searchTerm);
 
-  const strongResults = businesses.filter((b) =>
-    expandedTerms.some((term) => matchesStructured(b, term))
+  // 1) Name matches first (typed business name, full or partial)
+  const qn = norm(searchTerm);
+  const nameResults = businesses
+    .filter((b) => matchesName(b, searchTerm))
+    .sort((a, b) => {
+      const aStarts = norm(a.name).startsWith(qn) ? 0 : 1;
+      const bStarts = norm(b.name).startsWith(qn) ? 0 : 1;
+      return aStarts - bStarts;
+    });
+  const nameIds = new Set(nameResults.map((b) => b.id));
+
+  // 2) Then category / service matches (existing synonym search)
+  const strongResults = businesses.filter(
+    (b) => !nameIds.has(b.id) && expandedTerms.some((term) => matchesStructured(b, term))
   );
 
+  // 3) Description matches only if nothing else was found
   const weakResults =
-    strongResults.length === 0
+    nameResults.length === 0 && strongResults.length === 0
       ? businesses.filter((b) => expandedTerms.some((term) => matchesDescription(b, term)))
       : [];
 
-  const searchResults = [...strongResults, ...weakResults];
+  const searchResults = [...nameResults, ...strongResults, ...weakResults];
 
   // Once loaded, hide categories with no businesses (keeps "All")
   const visibleCategories = loading

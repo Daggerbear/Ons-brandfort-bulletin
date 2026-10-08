@@ -1,7 +1,9 @@
+// src/app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import TopNav from "@/components/TopNav";
 import "./globals.css";
+import BulletinHelper from "@/components/BulletinHelper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +73,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col pt-14">
         <TopNav />
         {children}
+        <BulletinHelper />
         <Analytics />
       </body>
     </html>

@@ -1,10 +1,11 @@
+// src/app/vind/page.js
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Link from "next/link";
 import Image from "next/image";
-import { expandQuery, tokenize, stem } from "@/lib/searchSynonyms";
+import { getReply, getGreeting } from "@/lib/botBrain";
 import { trackEvent } from "@/lib/analytics";
 
 const QUICK_TAGS = [
@@ -12,32 +13,15 @@ const QUICK_TAGS = [
   { af: "Werktuigkundige", en: "Mechanic" },
   { af: "Kapper", en: "Hair Salon" },
   { af: "Elektrisiën", en: "Electrician" },
-  { af: "Dokter", en: "Doctor" },
   { af: "Eetplek", en: "Restaurant" },
+  { af: "Ek soek werk", en: "I'm looking for a job" },
+  { af: "Ek wil iets verkoop", en: "I want to sell something" },
 ];
-
-function matchesStructured(business, term) {
-  const structuredText = [business.name, business.category, ...(business.services || [])]
-    .join(" ")
-    .toLowerCase();
-
-  if (term.includes(" ")) return structuredText.includes(term);
-
-  const words = new Set(tokenize(structuredText).map(stem));
-  return words.has(stem(term));
-}
-
-function matchesDescription(business, term) {
-  const desc = (business.description || "").toLowerCase();
-  if (term.includes(" ")) return desc.includes(term);
-
-  const words = new Set(tokenize(desc).map(stem));
-  return words.has(stem(term));
-}
 
 export default function VindDiens() {
   const [lang, setLang] = useState("af");
   const [businesses, setBusinesses] = useState([]);
+  const [knowledge, setKnowledge] = useState([]);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const bottomRef = useRef(null);
@@ -45,28 +29,16 @@ export default function VindDiens() {
   const text = {
     af: {
       title: "🔎 Vind 'n Diens",
-      subtitle: "Vra ons in jou eie woorde",
+      subtitle: "Vra my enigiets oor Brandfort",
       placeholder: "bv. waar kan ek wol koop?",
       tryTags: "Probeer:",
-      none: (q) =>
-        `Ons het niks gevind vir "${q}" nie. Probeer ander woorde, of `,
-      browseLink: "blaai deur al ons besighede",
-      foundOne: (n) => `Ons het ${n} plek gevind:`,
-      foundMany: (n) => `Ons het ${n} plekke gevind:`,
-      greeting: "Hi! Vra my waar jy iets kan vind — bv. 'n loodgieter, 'n kapper, of iets om te koop.",
       send: "Stuur",
     },
     en: {
       title: "🔎 Find a Service",
-      subtitle: "Ask in your own words",
+      subtitle: "Ask me anything about Brandfort",
       placeholder: "e.g. where can I buy wool?",
       tryTags: "Try:",
-      none: (q) =>
-        `We couldn't find anything for "${q}". Try different words, or `,
-      browseLink: "browse all our businesses",
-      foundOne: (n) => `Found ${n} place:`,
-      foundMany: (n) => `Found ${n} places:`,
-      greeting: "Hi! Ask me where to find something — e.g. a plumber, a hairdresser, or something to buy.",
       send: "Send",
     },
   };
@@ -80,12 +52,18 @@ export default function VindDiens() {
         .eq("Status", "approved")
         .order("created_at", { ascending: false });
       setBusinesses(data || []);
+
+      const { data: kn } = await supabase
+        .from("bot_knowledge")
+        .select("*")
+        .eq("active", true);
+      setKnowledge(kn || []);
     };
     loadData();
   }, []);
 
   useEffect(() => {
-    setMessages([{ type: "bot", text: t.greeting }]);
+    setMessages([{ type: "bot", text: getGreeting(lang) }]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -99,29 +77,24 @@ export default function VindDiens() {
 
     trackEvent("search", { query: q });
 
-    const expandedTerms = expandQuery(q);
+    const reply = getReply({ query: q, lang, businesses, knowledge });
 
-    const strongResults = businesses.filter((b) =>
-      expandedTerms.some((term) => matchesStructured(b, term))
-    );
-    const weakResults =
-      strongResults.length === 0
-        ? businesses.filter((b) => expandedTerms.some((term) => matchesDescription(b, term)))
-        : [];
-    const results = [...strongResults, ...weakResults];
+    if (reply.unanswered) {
+      // Save the question so we know what to teach her. Never blocks the chat.
+      supabase.rpc("log_unanswered", { q }).then(
+        () => {},
+        () => {}
+      );
+    }
 
     setMessages((prev) => [
       ...prev,
       { type: "user", text: q },
       {
         type: "bot",
-        text:
-          results.length === 0
-            ? null
-            : results.length === 1
-            ? t.foundOne(results.length)
-            : t.foundMany(results.length),
-        results,
+        text: reply.text,
+        results: reply.results,
+        links: reply.links,
         query: q,
       },
     ]);
@@ -168,12 +141,17 @@ export default function VindDiens() {
                   </div>
                 )}
 
-                {m.results && m.results.length === 0 && (
-                  <div className="bg-neutral-900 border border-neutral-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-neutral-400 text-sm">
-                    {t.none(m.query)}
-                    <Link href="/besighede" className="text-orange-400 underline">
-                      {t.browseLink}
-                    </Link>
+                {m.links && m.links.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {m.links.map((l) => (
+                      <Link
+                        key={l.href + l.label}
+                        href={l.href}
+                        className="text-sm font-semibold bg-orange-500 hover:bg-orange-600 transition text-black rounded-full px-4 py-2"
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
                   </div>
                 )}
 
