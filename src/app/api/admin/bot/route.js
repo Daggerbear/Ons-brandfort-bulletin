@@ -1,8 +1,8 @@
 // src/app/api/admin/bot/route.js
 // Private admin API for teaching Lientjie. Runs on the server only.
-// Needs two server-side env vars (NOT starting with NEXT_PUBLIC_):
+// Uses the SAME password as your admin login (ADMIN_PASSWORD).
+// Also needs one server-side env var (NOT starting with NEXT_PUBLIC_):
 //   SUPABASE_SERVICE_ROLE_KEY   - from Supabase > Project Settings > API
-//   BOT_ADMIN_PASSWORD          - a password you choose
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "crypto";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 function authorised(request) {
   const given = request.headers.get("x-admin-password") || "";
-  const expected = process.env.BOT_ADMIN_PASSWORD || "";
+  const expected = process.env.ADMIN_PASSWORD || "";
   if (!expected || !given) return false;
   const a = Buffer.from(given);
   const b = Buffer.from(expected);
@@ -45,6 +45,15 @@ const safeLink = (v) => {
 export async function GET(request) {
   if (!authorised(request)) return deny();
   const supabase = db();
+
+  // small count for the dashboard badge
+  if (new URL(request.url).searchParams.get("summary")) {
+    const { count } = await supabase
+      .from("bot_unanswered")
+      .select("*", { count: "exact", head: true })
+      .eq("handled", false);
+    return NextResponse.json({ pending: count ?? 0 });
+  }
 
   const [pending, handled, knowledge] = await Promise.all([
     supabase

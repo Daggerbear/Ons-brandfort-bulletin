@@ -14,6 +14,7 @@ const groups = [
       { name: "Businesses", icon: "🏪", href: "/admin/businesses", desc: "Approve, edit, or reject listings — manage each business menu from its card", badgeKey: "bizPending" },
       { name: "Events", icon: "📅", href: "/admin/events", desc: "Approve, edit, or reject events", badgeKey: "evPending" },
       { name: "Business Updates", icon: "📢", href: "/admin/business-updates", desc: "Approve, edit, or reject business updates", badgeKey: "updPending" },
+      { name: "Lientjie (Chatbot)", icon: "🤖", href: "/admin/lientjie", desc: "See what people asked that she couldn't answer, and teach her new answers", badgeKey: "botPending" },
       { name: "Gemeenskap Feed", icon: "💬", href: "/admin/feed", desc: "Delete flagged or reported posts" },
       { name: "Classifieds", icon: "🛒", href: "/admin/classifieds", desc: "Moderate buy & sell listings" },
       { name: "Jobs", icon: "💼", href: "/admin/jobs", desc: "Moderate job listings & work-seeker posts" },
@@ -66,11 +67,15 @@ export default function Admin() {
     evPending: 0,
     evLive: 0,
     updPending: 0,
+    botPending: 0,
   });
 
   useEffect(() => {
-    if (sessionStorage.getItem("adminAuth") === "true") {
+    // Lientjie's page needs the password for this session too, so ask once more if it is missing
+    if (sessionStorage.getItem("adminAuth") === "true" && sessionStorage.getItem("adminPw")) {
       setAuthenticated(true);
+    } else {
+      sessionStorage.removeItem("adminAuth");
     }
     setChecked(true);
   }, []);
@@ -88,7 +93,17 @@ export default function Admin() {
         supabase.from("business_updates").select("*", head).neq("Status", "approved"),
       ]);
 
+      let botPending = 0;
+      try {
+        const r = await fetch("/api/admin/bot?summary=1", {
+          headers: { "x-admin-password": sessionStorage.getItem("adminPw") || "" },
+          cache: "no-store",
+        });
+        if (r.ok) botPending = (await r.json()).pending ?? 0;
+      } catch {}
+
       setCounts({
+        botPending,
         bizPending: bizPending.count ?? 0,
         bizLive: bizLive.count ?? 0,
         evPending: evPending.count ?? 0,
@@ -113,6 +128,7 @@ export default function Admin() {
 
       if (res.ok) {
         sessionStorage.setItem("adminAuth", "true");
+        sessionStorage.setItem("adminPw", password);
         setAuthenticated(true);
       } else {
         setLoginError("Verkeerde wagwoord / Wrong password");
@@ -126,6 +142,7 @@ export default function Admin() {
 
   const logout = () => {
     sessionStorage.removeItem("adminAuth");
+    sessionStorage.removeItem("adminPw");
     setAuthenticated(false);
     setPassword("");
   };
@@ -183,12 +200,13 @@ export default function Admin() {
     );
   }
 
-  const totalPending = counts.bizPending + counts.evPending + counts.updPending;
+  const totalPending = counts.bizPending + counts.evPending + counts.updPending + counts.botPending;
 
   const pendingChips = [
     { label: "Businesses", href: "/admin/businesses", n: counts.bizPending },
     { label: "Events", href: "/admin/events", n: counts.evPending },
     { label: "Updates", href: "/admin/business-updates", n: counts.updPending },
+    { label: "Lientjie", href: "/admin/lientjie", n: counts.botPending },
   ].filter((c) => c.n > 0);
 
   return (
