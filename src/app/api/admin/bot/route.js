@@ -19,6 +19,12 @@ function authorised(request) {
 }
 
 function db() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing in Vercel (add it, then redeploy).");
+  }
+  if (!process.env.ADMIN_PASSWORD) {
+    throw new Error("ADMIN_PASSWORD is missing in Vercel.");
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -42,7 +48,7 @@ const safeLink = (v) => {
   return null;
 };
 
-export async function GET(request) {
+async function handleGet(request) {
   if (!authorised(request)) return deny();
   const supabase = db();
 
@@ -82,7 +88,7 @@ export async function GET(request) {
   });
 }
 
-export async function POST(request) {
+async function handlePost(request) {
   if (!authorised(request)) return deny();
   const supabase = db();
 
@@ -171,4 +177,20 @@ export async function POST(request) {
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+}
+
+export async function GET(request) {
+  try {
+    return await handleGet(request);
+  } catch (e) {
+    return NextResponse.json({ error: e.message || "Server error" }, { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    return await handlePost(request);
+  } catch (e) {
+    return NextResponse.json({ error: e.message || "Server error" }, { status: 500 });
+  }
 }
