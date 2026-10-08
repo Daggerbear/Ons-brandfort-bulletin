@@ -3,6 +3,8 @@
 // Uses the SAME password as your admin login (ADMIN_PASSWORD).
 // Also needs one server-side env var (NOT starting with NEXT_PUBLIC_):
 //   SUPABASE_SERVICE_ROLE_KEY   - from Supabase > Project Settings > API
+//   SUPABASE_URL                - your project URL (not secret), only needed if
+//                                 NEXT_PUBLIC_SUPABASE_URL is not set in Vercel
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "crypto";
@@ -25,8 +27,12 @@ function db() {
   if (!process.env.ADMIN_PASSWORD) {
     throw new Error("ADMIN_PASSWORD is missing in Vercel.");
   }
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    throw new Error("SUPABASE_URL is missing in Vercel (your project URL, like https://xxxx.supabase.co).");
+  }
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    url,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false } }
   );
