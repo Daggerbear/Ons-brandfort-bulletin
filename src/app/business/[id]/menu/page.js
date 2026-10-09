@@ -10,11 +10,14 @@ const money = (amount) => `R${Number(amount || 0).toFixed(2)}`;
 const labels = {
   af: {
     back: "Terug na besigheid",
+    backToCategories: "Kategorieë",
     cart: "Jou bestelling",
     empty: "Jou mandjie is nog leeg.",
     add: "Voeg by",
     all: "Alles",
+    viewFull: "Sien die volle spyskaart",
     chooseCategory: "Kies kategorie",
+    itemsCount: "items",
     collection: "Afhaal",
     delivery: "Aflewering",
     name: "Jou naam",
@@ -30,14 +33,18 @@ const labels = {
     choose: "Kies",
     requiredChoice: "Kies asseblief",
     itemTypes: "item tipes",
+    other: "Ander",
   },
   en: {
     back: "Back to business",
+    backToCategories: "Categories",
     cart: "Your order",
     empty: "Your cart is empty.",
     add: "Add",
     all: "All",
+    viewFull: "View the full menu",
     chooseCategory: "Choose a category",
+    itemsCount: "items",
     collection: "Collection",
     delivery: "Delivery",
     name: "Your name",
@@ -53,6 +60,7 @@ const labels = {
     choose: "Choose",
     requiredChoice: "Please choose",
     itemTypes: "item types",
+    other: "Other",
   },
 };
 
@@ -71,7 +79,8 @@ export default function BusinessMenuPage() {
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("all");
+  // null = category selection page, "all" = full menu, otherwise a category id
+  const [activeCategory, setActiveCategory] = useState(null);
   const [customerName, setCustomerName] = useState("");
   const [orderType, setOrderType] = useState("");
   const [address, setAddress] = useState("");
@@ -195,12 +204,71 @@ export default function BusinessMenuPage() {
     loadMenu();
   }, [id]);
 
+  // Make the phone's back button/gesture go from items -> categories
+  // instead of leaving the menu entirely.
+  useEffect(() => {
+    const onPopState = (event) => {
+      setActiveCategory(event.state?.menuCat ?? null);
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const openCategory = (categoryId) => {
+    // Spread the existing state so Next.js keeps its own history data intact
+    window.history.pushState(
+      { ...window.history.state, menuCat: categoryId },
+      "",
+    );
+    setActiveCategory(categoryId);
+    window.scrollTo({ top: 0 });
+  };
+
+  const closeCategory = () => {
+    if (window.history.state?.menuCat) {
+      window.history.back();
+    } else {
+      setActiveCategory(null);
+      window.scrollTo({ top: 0 });
+    }
+  };
+
   const categoryItems = useMemo(() => {
     if (activeCategory === "all") return items;
     return items.filter((item) => item.category_id === activeCategory);
   }, [activeCategory, items]);
 
+  const categoryCards = useMemo(() => {
+    const cards = categories
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        count: items.filter((item) => item.category_id === category.id).length,
+      }))
+      .filter((card) => card.count > 0);
+
+    const uncategorisedCount = items.filter((item) => !item.category_id).length;
+    if (uncategorisedCount) {
+      cards.push({
+        id: "uncategorised",
+        name: labels[lang].other,
+        count: uncategorisedCount,
+      });
+    }
+    return cards;
+  }, [categories, items, lang]);
+
   const groupedMenu = useMemo(() => {
+    if (activeCategory === null) return [];
+
+    if (activeCategory === "uncategorised") {
+      const list = items.filter((item) => !item.category_id);
+      return list.length
+        ? [{ id: "uncategorised", name: labels[lang].other, items: list }]
+        : [];
+    }
+
     if (activeCategory !== "all") {
       const category = categories.find((entry) => entry.id === activeCategory);
       return category ? [{ ...category, items: categoryItems }] : [];
@@ -223,6 +291,12 @@ export default function BusinessMenuPage() {
     }
     return grouped;
   }, [activeCategory, categories, categoryItems, items, lang]);
+
+  const activeTitle = useMemo(() => {
+    if (activeCategory === "all") return labels[lang].all;
+    if (activeCategory === "uncategorised") return labels[lang].other;
+    return categories.find((entry) => entry.id === activeCategory)?.name || "";
+  }, [activeCategory, categories, lang]);
 
   const itemsById = useMemo(
     () => Object.fromEntries(items.map((item) => [item.id, item])),
@@ -427,8 +501,122 @@ export default function BusinessMenuPage() {
     );
   }
 
-const canOrder =
+  const canOrder =
     isEnquiry || settings.collection_enabled || settings.delivery_enabled;
+
+  const showingCategories = activeCategory === null;
+
+  const renderItem = (item) => {
+    const itemGroups = groupsByItem[item.id] || [];
+    const hasChoices = itemGroups.length > 0;
+    const simpleEntry = cart[item.id];
+
+    return (
+      <article
+        key={item.id}
+        className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-4 flex gap-3 justify-between"
+      >
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-white">{item.name}</h3>
+          {item.description && (
+            <p className="text-sm text-neutral-400 mt-1 leading-snug">
+              {item.description}
+            </p>
+          )}
+          <p className="text-orange-400 font-bold mt-3">
+            {isEnquiry
+              ? `${enquiryCopy.from} ${money(item.price)}`
+              : money(item.price)}
+          </p>
+
+          {itemGroups.map((group) => {
+            const selected = itemChoices[item.id]?.[group.id] || "";
+            const values = valuesByGroup[group.id] || [];
+            return (
+              <label
+                key={group.id}
+                className="block mt-3 text-sm text-neutral-300"
+              >
+                <span className="block mb-1 font-medium">
+                  {group.name}{" "}
+                  {group.is_required && (
+                    <span className="text-orange-300">*</span>
+                  )}
+                </span>
+                <select
+                  value={selected}
+                  onChange={(event) =>
+                    setItemChoice(item.id, group.id, event.target.value)
+                  }
+                  className="w-full rounded-lg bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none px-3 py-2 text-white"
+                >
+                  <option value="">
+                    {t.choose} {group.name}
+                  </option>
+                  {values.map((value) => (
+                    <option key={value.id} value={value.id}>
+                      {value.name}
+                      {Number(value.price_adjustment) > 0
+                        ? ` +${money(value.price_adjustment)}`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
+          })}
+        </div>
+
+        {canOrder &&
+          (hasChoices ? (
+            <button
+              onClick={() => addToCart(item.id)}
+              className="shrink-0 self-end rounded-lg bg-orange-500 hover:bg-orange-600 transition px-3 py-2 font-semibold text-sm"
+            >
+              + {isEnquiry ? enquiryCopy.choose : t.add}
+            </button>
+          ) : isEnquiry ? (
+            <button
+              onClick={() =>
+                simpleEntry
+                  ? changeQuantity(item.id, -1)
+                  : addToCart(item.id)
+              }
+              className={`shrink-0 self-end rounded-lg transition px-3 py-2 font-semibold text-sm ${simpleEntry ? "border border-orange-500/50 text-orange-300 hover:bg-neutral-800" : "bg-orange-500 hover:bg-orange-600"}`}
+            >
+              {simpleEntry
+                ? `✓ ${enquiryCopy.selected}`
+                : `+ ${enquiryCopy.choose}`}
+            </button>
+          ) : simpleEntry ? (
+            <div className="shrink-0 flex items-center self-end rounded-lg border border-orange-500/50 overflow-hidden">
+              <button
+                onClick={() => changeQuantity(item.id, -1)}
+                className="px-3 py-2 hover:bg-neutral-800 text-lg"
+              >
+                −
+              </button>
+              <span className="min-w-8 text-center font-bold">
+                {simpleEntry.quantity}
+              </span>
+              <button
+                onClick={() => changeQuantity(item.id, 1)}
+                                className="px-3 py-2 hover:bg-orange-500 text-lg"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => addToCart(item.id)}
+              className="shrink-0 self-end rounded-lg bg-orange-500 hover:bg-orange-600 transition px-3 py-2 font-semibold text-sm"
+            >
+              + {t.add}
+            </button>
+          ))}
+      </article>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white px-4 py-6 sm:px-6 sm:py-10">
@@ -441,12 +629,21 @@ const canOrder =
         )}
 
         <div className="flex items-center justify-between gap-4 mb-6">
-          <a
-            href={`/business/${id}`}
-            className="text-sm text-neutral-400 hover:text-orange-400 transition underline"
-          >
-            ← {t.back}
-          </a>
+          {showingCategories ? (
+            <a
+              href={`/business/${id}`}
+              className="text-sm text-neutral-400 hover:text-orange-400 transition underline"
+            >
+              ← {t.back}
+            </a>
+          ) : (
+            <button
+              onClick={closeCategory}
+              className="text-sm font-semibold rounded-full border border-orange-500/60 text-orange-300 hover:bg-orange-500 hover:text-white transition px-4 py-2"
+            >
+              ← {t.backToCategories}
+            </button>
+          )}
           <button
             onClick={() => setLang(lang === "af" ? "en" : "af")}
             className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
@@ -455,49 +652,54 @@ const canOrder =
           </button>
         </div>
 
-        <section className="rounded-3xl overflow-hidden border border-purple-500/40 bg-gradient-to-br from-purple-950 via-neutral-950 to-neutral-900 p-6 sm:p-8 mb-5">
-          <div className="flex items-start gap-4">
-            {business.logo_url ? (
-              <img
-                src={business.logo_url}
-                alt={`${business.name} logo`}
-                className="shrink-0 h-16 w-16 rounded-2xl object-cover bg-white p-1 shadow-lg"
-              />
-            ) : (
-              <div className="shrink-0 h-16 w-16 rounded-2xl bg-white text-purple-800 flex items-center justify-center text-2xl font-black shadow-lg">
-                {business.name?.slice(0, 1)}
-              </div>
-            )}
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-2">
-                {isEnquiry ? enquiryCopy.heading : "Online Menu"}
-              </p>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-                {business.name}
-              </h1>
-              {(settings.order_notice || business.description) && (
-                <p className="text-neutral-300 mt-2">
-                  {settings.order_notice || business.description}
+        {showingCategories ? (
+          <section className="rounded-3xl overflow-hidden border border-purple-500/40 bg-gradient-to-br from-purple-950 via-neutral-950 to-neutral-900 p-6 sm:p-8 mb-5">
+            <div className="flex items-start gap-4">
+              {business.logo_url ? (
+                <img
+                  src={business.logo_url}
+                  alt={`${business.name} logo`}
+                  className="shrink-0 h-16 w-16 rounded-2xl object-cover bg-white p-1 shadow-lg"
+                />
+              ) : (
+                <div className="shrink-0 h-16 w-16 rounded-2xl bg-white text-purple-800 flex items-center justify-center text-2xl font-black shadow-lg">
+                  {business.name?.slice(0, 1)}
+                </div>
+              )}
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-2">
+                  {isEnquiry ? enquiryCopy.heading : "Online Menu"}
                 </p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+                  {business.name}
+                </h1>
+                {(settings.order_notice || business.description) && (
+                  <p className="text-neutral-300 mt-2">
+                    {settings.order_notice || business.description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-sm">
+              {business.hours && (
+                <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
+                  {business.hours}
+                </div>
+              )}
+              {business.address && (
+                <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
+                  {business.address}
+                </div>
               )}
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-sm">
-            {business.hours && (
-              <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
-                {business.hours}
-              </div>
-            )}
-            {business.address && (
-              <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-neutral-200">
-                {business.address}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {canOrder && (
-          <section className="mb-5 rounded-2xl border border-orange-500/40 bg-neutral-900 overflow-hidden shadow-lg">
+          </section>
+        ) : (
+          <p className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-3">
+            {business.name}
+          </p>
+        )}
+                {canOrder && (
+          <section className="sticky top-2 z-30 mb-5 rounded-2xl border border-orange-500/40 bg-neutral-900 overflow-hidden shadow-lg">
             <button
               onClick={() => setCartOpen(!cartOpen)}
               className="w-full flex items-center justify-between gap-4 px-4 py-4 text-left hover:bg-neutral-800 transition"
@@ -531,7 +733,7 @@ const canOrder =
             </button>
 
             {cartOpen && (
-              <div className="border-t border-neutral-800 p-4 sm:p-5">
+              <div className="border-t border-neutral-800 p-4 sm:p-5 max-h-[70vh] overflow-y-auto">
                 {cartItems.length > 0 && (
                   <div className="border-b border-neutral-800 pb-3 mb-4 max-h-48 overflow-y-auto space-y-3">
                     {cartItems.map((item) => {
@@ -655,166 +857,89 @@ const canOrder =
             )}
           </section>
         )}
-
-        {!canOrder && (
+                {!canOrder && (
           <p className="mb-5 text-sm text-neutral-400">{t.noOrderType}</p>
         )}
 
-        <div className="mb-7">
-          <p className="text-sm font-semibold text-neutral-300 mb-2">
-            {t.chooseCategory}
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveCategory("all")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${activeCategory === "all" ? "bg-orange-500 text-white" : "bg-neutral-900 border border-neutral-700 text-neutral-300"}`}
-            >
-              {t.all}
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${activeCategory === category.id ? "bg-orange-500 text-white" : "bg-neutral-900 border border-neutral-700 text-neutral-300"}`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        {showingCategories && (
+          <div>
+            <p className="text-sm font-semibold text-neutral-300 mb-3">
+              {t.chooseCategory}
+            </p>
 
-        <div className="space-y-8">
-          {groupedMenu.length === 0 && (
-            <p className="text-neutral-400">{t.noItems}</p>
-          )}
-          {groupedMenu.map((category) => (
-            <section key={category.id}>
-              <h2 className="text-2xl font-bold text-orange-400">
-                {category.name}
-              </h2>
-              <div className="grid gap-3 mt-4 sm:grid-cols-2">
-                {category.items.map((item) => {
-                  const itemGroups = groupsByItem[item.id] || [];
-                  const hasChoices = itemGroups.length > 0;
-                  const simpleEntry = cart[item.id];
+            {categoryCards.length === 0 ? (
+              <p className="text-neutral-400">{t.noItems}</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <button
+                  onClick={() => openCategory("all")}
+                  className="col-span-2 sm:col-span-3 text-left rounded-2xl border-2 border-orange-500 bg-orange-500/10 hover:bg-orange-500/20 active:scale-[0.99] transition px-5 py-5 flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <p className="text-lg font-black text-orange-400">
+                      {t.all}
+                    </p>
+                    <p className="text-sm text-neutral-400 mt-0.5">
+                      {t.viewFull} · {items.length} {t.itemsCount}
+                    </p>
+                  </div>
+                  <span className="text-orange-400 text-2xl">›</span>
+                </button>
 
-return (
-                    <article
-                      key={item.id}
-                      className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-4 flex gap-3 justify-between"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-white">
-                          {item.name}
-                        </h3>
-                        {item.description && (
-                          <p className="text-sm text-neutral-400 mt-1 leading-snug">
-                            {item.description}
-                          </p>
-                        )}
-                        <p className="text-orange-400 font-bold mt-3">
-                          {isEnquiry
-                            ? `${enquiryCopy.from} ${money(item.price)}`
-                            : money(item.price)}
-                        </p>
-
-                        {itemGroups.map((group) => {
-                          const selected =
-                            itemChoices[item.id]?.[group.id] || "";
-                          const values = valuesByGroup[group.id] || [];
-                          return (
-                            <label
-                              key={group.id}
-                              className="block mt-3 text-sm text-neutral-300"
-                            >
-                              <span className="block mb-1 font-medium">
-                                {group.name}{" "}
-                                {group.is_required && (
-                                  <span className="text-orange-300">*</span>
-                                )}
-                              </span>
-                              <select
-                                value={selected}
-                                onChange={(event) =>
-                                  setItemChoice(
-                                    item.id,
-                                    group.id,
-                                    event.target.value,
-                                  )
-                                }
-                                className="w-full rounded-lg bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none px-3 py-2 text-white"
-                              >
-                                <option value="">
-                                  {t.choose} {group.name}
-                                </option>
-                                {values.map((value) => (
-                                  <option key={value.id} value={value.id}>
-                                    {value.name}
-                                    {Number(value.price_adjustment) > 0
-                                      ? ` +${money(value.price_adjustment)}`
-                                      : ""}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          );
-                        })}
-                      </div>
-
-                      {canOrder &&
-                        (hasChoices ? (
-                          <button
-                            onClick={() => addToCart(item.id)}
-                            className="shrink-0 self-end rounded-lg bg-orange-500 hover:bg-orange-600 transition px-3 py-2 font-semibold text-sm"
-                          >
-                            + {isEnquiry ? enquiryCopy.choose : t.add}
-                          </button>
-                        ) : isEnquiry ? (
-                          <button
-                            onClick={() =>
-                              simpleEntry
-                                ? changeQuantity(item.id, -1)
-                                : addToCart(item.id)
-                            }
-                            className={`shrink-0 self-end rounded-lg transition px-3 py-2 font-semibold text-sm ${simpleEntry ? "border border-orange-500/50 text-orange-300 hover:bg-neutral-800" : "bg-orange-500 hover:bg-orange-600"}`}
-                          >
-                            {simpleEntry
-                              ? `✓ ${enquiryCopy.selected}`
-                              : `+ ${enquiryCopy.choose}`}
-                          </button>
-                        ) : simpleEntry ? (
-                          <div className="shrink-0 flex items-center self-end rounded-lg border border-orange-500/50 overflow-hidden">
-                            <button
-                              onClick={() => changeQuantity(item.id, -1)}
-                              className="px-3 py-2 hover:bg-neutral-800 text-lg"
-                            >
-                              −
-                            </button>
-                            <span className="min-w-8 text-center font-bold">
-                              {simpleEntry.quantity}
-                            </span>
-                            <button
-                              onClick={() => changeQuantity(item.id, 1)}
-                              className="px-3 py-2 hover:bg-orange-500 text-lg"
-                            >
-                              +
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => addToCart(item.id)}
-                            className="shrink-0 self-end rounded-lg bg-orange-500 hover:bg-orange-600 transition px-3 py-2 font-semibold text-sm"
-                          >
-                            + {t.add}
-                          </button>
-                        ))}
-                    </article>
-                  );
-                })}
+                {categoryCards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => openCategory(card.id)}
+                    className="text-left rounded-2xl border border-neutral-800 bg-neutral-900 hover:border-orange-500 active:scale-[0.98] transition px-4 py-5 min-h-[96px] flex flex-col justify-between gap-3"
+                  >
+                    <p className="text-base font-bold text-white leading-tight">
+                      {card.name}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-neutral-500">
+                        {card.count} {t.itemsCount}
+                      </p>
+                      <span className="text-orange-400 text-lg">›</span>
+                    </div>
+                  </button>
+                ))}
               </div>
-            </section>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
+
+        {!showingCategories && (
+          <div>
+            <h2 className="text-3xl font-black tracking-tight text-orange-400 mb-5">
+              {activeTitle}
+            </h2>
+
+            <div className="space-y-8">
+              {groupedMenu.length === 0 && (
+                <p className="text-neutral-400">{t.noItems}</p>
+              )}
+              {groupedMenu.map((category) => (
+                <section key={category.id}>
+                  {activeCategory === "all" && (
+                    <h3 className="text-2xl font-bold text-orange-400 mb-4">
+                      {category.name}
+                    </h3>
+                  )}
+                  <div className="grid gap-3">
+                    {category.items.map((item) => renderItem(item))}
+                  </div>
+                </section>
+              ))}
+            </div>
+
+            <button
+              onClick={closeCategory}
+              className="mt-8 w-full rounded-xl border border-neutral-700 hover:border-orange-500 text-neutral-300 hover:text-orange-400 transition py-3 text-sm font-semibold"
+            >
+              ← {t.backToCategories}
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );
