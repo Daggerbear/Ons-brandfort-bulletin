@@ -17,6 +17,7 @@ const text = {
       cta: "Maak Oop",
     },
     buySell: { title: "Koop & Verkoop", desc: "Plaaslike classifieds." },
+    housing: { title: "Behuising", desc: "Huise en kamers te huur of te koop." },
     glitch: { title: "Glitch Cafe", desc: "Speletjies vir 'n bietjie plesier." },
     events: "🔥 Wat Gebeur",
     noEvents: "Nog geen gebeurtenisse nie.",
@@ -33,6 +34,7 @@ const text = {
       cta: "Open",
     },
     buySell: { title: "Buy & Sell", desc: "Local classifieds." },
+    housing: { title: "Housing", desc: "Homes and rooms to rent or buy." },
     glitch: { title: "Glitch Cafe", desc: "Games for a bit of fun." },
     events: "🔥 What's Happening",
     noEvents: "No events yet.",
@@ -230,8 +232,17 @@ export default function CommunityHub() {
           </Link>
 
           <Link
+            href="/housing"
+            className="bg-neutral-900 border border-sky-500/30 hover:border-sky-400 transition rounded-xl p-4 flex flex-col items-center text-center gap-1"
+          >
+            <span className="text-3xl">🏠</span>
+            <h2 className="text-sm font-semibold text-sky-400">{t.housing.title}</h2>
+            <p className="text-xs text-neutral-500">{t.housing.desc}</p>
+          </Link>
+
+          <Link
             href="/games"
-            className="rounded-xl p-4 flex flex-col items-center text-center gap-1 border-2 transition hover:scale-[1.01]"
+            className="col-span-2 rounded-xl p-4 flex flex-col items-center text-center gap-1 border-2 transition hover:scale-[1.01]"
             style={{
               borderColor: "#a855f7",
               background:

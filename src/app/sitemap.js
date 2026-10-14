@@ -34,6 +34,7 @@ export default async function sitemap() {
     '/games/snake',
     '/games/brick-breaker',
     '/games/merge-rush',
+    '/housing',
   ]
 
   const staticRoutes = routes.map((route) => ({

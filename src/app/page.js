@@ -91,11 +91,12 @@ export default function Home() {
   ];
 
   const communityLinks = [
-    { icon: "💬", label: { af: "Feed", en: "Feed" }, href: "/feed" },
-    { icon: "🛒", label: { af: "Koop/Verkoop", en: "Buy/Sell" }, href: "/classifieds" },
-    { icon: "🕹️", label: { af: "Glitch Cafe", en: "Glitch Cafe" }, href: "/games" },
-    { icon: "📅", label: { af: "Lys Gebeurtenis", en: "List Event" }, href: "/list-your-event" },
-  ];
+  { icon: "💬", label: { af: "Feed", en: "Feed" }, href: "/feed" },
+  { icon: "🛒", label: { af: "Koop/Verkoop", en: "Buy/Sell" }, href: "/classifieds" },
+  { icon: "🏠", label: { af: "Behuising", en: "Housing" }, href: "/housing" },
+  { icon: "🕹️", label: { af: "Glitch Cafe", en: "Glitch Cafe" }, href: "/games" },
+  { icon: "📅", label: { af: "Lys Gebeurtenis", en: "List Event" }, href: "/list-your-event" },
+];
 
   const emergencyLinks = [
     { icon: "🚓", label: { af: "Polisie", en: "Police" } },

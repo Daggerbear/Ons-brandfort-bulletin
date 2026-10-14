@@ -17,6 +17,7 @@ const groups = [
       { name: "Lientjie (Chatbot)", icon: "🤖", href: "/admin/lientjie", desc: "See what people asked that she couldn't answer, and teach her new answers", badgeKey: "botPending" },
       { name: "Gemeenskap Feed", icon: "💬", href: "/admin/feed", desc: "Delete flagged or reported posts" },
       { name: "Classifieds", icon: "🛒", href: "/admin/classifieds", desc: "Moderate buy & sell listings" },
+      { name: "Housing", icon: "🏠", href: "/admin/housing", desc: "Moderate rental & for-sale property listings" },
       { name: "Jobs", icon: "💼", href: "/admin/jobs", desc: "Moderate job listings & work-seeker posts" },
       { name: "Riddles", icon: "🧩", href: "/admin/riddles", desc: "Manage Riddle Rush questions, answers, hints, and scheduling" },
       { name: "Riddle Winners", icon: "🏆", href: "/admin/riddle-winners", desc: "Manually trigger or test the monthly Riddle Rush winners post" },
