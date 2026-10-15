@@ -11,6 +11,7 @@ import LiveTicker from "@/components/LiveTicker";
 import InstallButton from "@/components/InstallButton";
 import SiteReviews from "@/components/SiteReviews";
 import WeatherWidget from "@/components/WeatherWidget";
+import ListenLiveCard from "@/components/ListenLiveCard";
 import { trackEvent } from "@/lib/analytics";
 
 const BUSINESS_FALLBACK = {
@@ -91,12 +92,12 @@ export default function Home() {
   ];
 
   const communityLinks = [
-  { icon: "💬", label: { af: "Feed", en: "Feed" }, href: "/feed" },
-  { icon: "🛒", label: { af: "Koop/Verkoop", en: "Buy/Sell" }, href: "/classifieds" },
-  { icon: "🏠", label: { af: "Behuising", en: "Housing" }, href: "/housing" },
-  { icon: "🕹️", label: { af: "Glitch Cafe", en: "Glitch Cafe" }, href: "/games" },
-  { icon: "📅", label: { af: "Lys Gebeurtenis", en: "List Event" }, href: "/list-your-event" },
-];
+    { icon: "💬", label: { af: "Feed", en: "Feed" }, href: "/feed" },
+    { icon: "🛒", label: { af: "Koop/Verkoop", en: "Buy/Sell" }, href: "/classifieds" },
+    { icon: "🏠", label: { af: "Behuising", en: "Housing" }, href: "/housing" },
+    { icon: "🕹️", label: { af: "Glitch Cafe", en: "Glitch Cafe" }, href: "/games" },
+    { icon: "📅", label: { af: "Lys Gebeurtenis", en: "List Event" }, href: "/list-your-event" },
+  ];
 
   const emergencyLinks = [
     { icon: "🚓", label: { af: "Polisie", en: "Police" } },
@@ -368,6 +369,11 @@ export default function Home() {
             </div>
           </div>
         </Link>
+      </section>
+
+      {/* Listen Live — Veldbrand Radio */}
+      <section className="px-6 pb-4 max-w-2xl mx-auto w-full">
+        <ListenLiveCard lang={lang} />
       </section>
 
       <SiteReviews lang={lang} />
