@@ -9,6 +9,8 @@ export default function RadioPlayer() {
   // Only mount the iframe after the first open, then never unmount it,
   // so audio keeps playing when the panel is retracted or pages change.
   const [loaded, setLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     try {
@@ -22,6 +24,13 @@ export default function RadioPlayer() {
       localStorage.setItem("radio_open", open ? "1" : "0");
     } catch {}
   }, [open]);
+
+  // If the player hasn't finished loading after 10s, show a fallback link
+  useEffect(() => {
+    if (!loaded || ready) return;
+    const id = setTimeout(() => setSlow(true), 10000);
+    return () => clearTimeout(id);
+  }, [loaded, ready]);
 
   return (
     <div
@@ -46,14 +55,38 @@ export default function RadioPlayer() {
         </h3>
 
         {loaded && (
-          <iframe
-            width="100%"
-            height="250"
-            src={PLAYER_URL}
-            style={{ border: 0, borderRadius: 12 }}
-            title="Luister regstreeks na Veldbrand Radio"
-            allow="autoplay"
-          />
+          <div
+            className="relative rounded-xl overflow-hidden bg-neutral-900"
+            style={{ height: 250 }}
+          >
+            {!ready && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-4">
+                <span className="text-3xl animate-pulse">📻</span>
+                <p className="text-xs text-neutral-400">
+                  Laai speler... / Loading player...
+                </p>
+                {slow && (
+                  <a
+                    href={STATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-400 underline"
+                  >
+                    Neem lank? Maak Veldbrand Radio oop / Taking long? Open Veldbrand Radio
+                  </a>
+                )}
+              </div>
+            )}
+            <iframe
+              width="100%"
+              height="250"
+              src={PLAYER_URL}
+              onLoad={() => setReady(true)}
+              style={{ border: 0, position: "relative" }}
+              title="Luister regstreeks na Veldbrand Radio"
+              allow="autoplay"
+            />
+          </div>
         )}
 
         {/* Permission footnote */}
