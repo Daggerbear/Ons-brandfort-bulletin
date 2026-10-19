@@ -2,6 +2,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthButton from "@/components/AuthButton";
 
 const TABS = [
   { href: "/", icon: "🏠", label: { af: "Tuis", en: "Home" }, match: (p) => p === "/" },
@@ -16,7 +17,7 @@ export default function TopNav({ lang = "af" }) {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-neutral-950/95 backdrop-blur-md border-b border-neutral-800">
-      <div className="max-w-2xl mx-auto grid grid-cols-5">
+      <div className="max-w-2xl mx-auto grid grid-cols-6">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
           return (
@@ -37,6 +38,7 @@ export default function TopNav({ lang = "af" }) {
             </Link>
           );
         })}
+        <AuthButton lang={lang} variant="tab" />
       </div>
     </nav>
   );

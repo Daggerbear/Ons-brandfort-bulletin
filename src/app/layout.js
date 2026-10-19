@@ -5,6 +5,7 @@ import TopNav from "@/components/TopNav";
 import "./globals.css";
 import BulletinHelper from "@/components/BulletinHelper";
 import RadioPlayer from "@/components/RadioPlayer";
+import { AuthProvider } from "@/components/AuthProvider";
 
 
 const geistSans = Geist({
@@ -73,10 +74,12 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col pt-14">
-        <TopNav />
-        {children}
-        <RadioPlayer />
-        <BulletinHelper />
+        <AuthProvider>
+          <TopNav />
+          {children}
+          <RadioPlayer />
+          <BulletinHelper />
+        </AuthProvider>
         <Analytics />
       </body>
     </html>
