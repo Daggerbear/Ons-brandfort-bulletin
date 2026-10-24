@@ -1,16 +1,21 @@
 // src/components/AuthButton.js
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import Avatar from "@/components/Avatar";
 
 const labels = {
-  af: { signIn: "Teken in", signOut: "Teken uit", wait: "Wag...", dismiss: "Maak toe" },
-  en: { signIn: "Sign in", signOut: "Sign out", wait: "Please wait...", dismiss: "Dismiss" },
+  af: { signIn: "Teken in", signOut: "Teken uit", profile: "Profiel", wait: "Wag...", dismiss: "Maak toe" },
+  en: { signIn: "Sign in", signOut: "Sign out", profile: "Profile", wait: "Please wait...", dismiss: "Dismiss" },
 };
 
-// variant "tab" matches the TopNav tabs (icon over label); "pill" is a standalone button
+// variant "tab" matches the TopNav tabs (icon over label); "pill" is a standalone button.
+// In the nav, signed-in people see their photo and go to /profile (sign out lives there).
 export default function AuthButton({ lang = "af", variant = "pill" }) {
   const { user, loading, busy, error, clearError, signInWithGoogle, signOut } =
     useAuth();
+  const pathname = usePathname();
   const t = labels[lang] || labels.af;
   const isTab = variant === "tab";
 
@@ -32,6 +37,27 @@ export default function AuthButton({ lang = "af", variant = "pill" }) {
     );
   }
 
+  if (isTab && user) {
+    const active = pathname?.startsWith("/profile");
+    return (
+      <Link
+        href="/profile"
+        title={user.email || ""}
+        className="relative flex w-full flex-col items-center justify-center gap-0.5 py-2.5"
+      >
+        {active && (
+          <span className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-orange-500" />
+        )}
+        <Avatar user={user} size={24} />
+        <span
+          className={`text-[10px] font-medium ${active ? "text-orange-400" : "text-neutral-500"}`}
+        >
+          {t.profile}
+        </span>
+      </Link>
+    );
+  }
+
   const label = busy ? t.wait : user ? t.signOut : t.signIn;
   const onClick = user ? signOut : signInWithGoogle;
 
@@ -40,17 +66,10 @@ export default function AuthButton({ lang = "af", variant = "pill" }) {
       type="button"
       onClick={onClick}
       disabled={busy}
-      title={user?.email || ""}
-      className="w-full flex flex-col items-center justify-center gap-0.5 py-2.5 disabled:opacity-50"
+      className="flex w-full flex-col items-center justify-center gap-0.5 py-2.5 disabled:opacity-50"
     >
-      <span className={`text-xl ${user ? "opacity-60" : ""}`}>👤</span>
-      <span
-        className={`text-[10px] font-medium ${
-          user ? "text-neutral-500" : "text-orange-400"
-        }`}
-      >
-        {label}
-      </span>
+      <span className="text-xl">👤</span>
+      <span className="text-[10px] font-medium text-orange-400">{label}</span>
     </button>
   ) : (
     <button
@@ -58,10 +77,10 @@ export default function AuthButton({ lang = "af", variant = "pill" }) {
       onClick={onClick}
       disabled={busy}
       title={user?.email || ""}
-      className={`text-sm rounded-full px-3 py-1 border transition disabled:opacity-50 whitespace-nowrap ${
+      className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm transition disabled:opacity-50 ${
         user
           ? "border-neutral-600 text-neutral-200 hover:border-orange-500 hover:text-orange-400"
-          : "border-orange-500 bg-orange-500 text-black font-semibold hover:bg-orange-600"
+          : "border-orange-500 bg-orange-500 font-semibold text-black hover:bg-orange-600"
       }`}
     >
       {label}
@@ -74,13 +93,13 @@ export default function AuthButton({ lang = "af", variant = "pill" }) {
       {error && (
         <div
           role="alert"
-          className="absolute right-0 top-full mt-2 w-64 z-50 bg-red-950/90 border border-red-500/50 text-red-200 text-xs rounded-lg px-3 py-2"
+          className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-red-500/50 bg-red-950/90 px-3 py-2 text-xs text-red-200"
         >
           <p>{error[lang] || error.af}</p>
           <button
             type="button"
             onClick={clearError}
-            className="mt-1 underline text-red-300 hover:text-white"
+            className="mt-1 text-red-300 underline hover:text-white"
           >
             {t.dismiss}
           </button>
