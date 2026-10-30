@@ -9,6 +9,7 @@ export default async function sitemap() {
 
   const routes = [
     '',
+    '/business',
     '/vind',
     '/besighede',
     '/feed',
@@ -34,6 +35,9 @@ export default async function sitemap() {
     '/games/snake',
     '/games/brick-breaker',
     '/games/merge-rush',
+    '/games/idle-empire',
+    '/games/hue-hoard',
+    '/games/merge-collect',
     '/housing',
   ]
 

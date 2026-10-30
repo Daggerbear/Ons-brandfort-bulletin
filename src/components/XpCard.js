@@ -1,19 +1,18 @@
 // src/components/XpCard.js
 "use client";
 import { levelFromXp } from "@/lib/xp";
+import QuestList from "@/components/QuestList";
 
 const text = {
   af: {
     status: "STATUS",
     level: "VLAK",
     toNext: "XP tot die volgende vlak",
-    soon: "Daaglikse missies kom binnekort.",
   },
   en: {
     status: "STATUS",
     level: "LEVEL",
     toNext: "XP to the next level",
-    soon: "Daily quests coming soon.",
   },
 };
 
@@ -55,9 +54,7 @@ export default function XpCard({ totalXp = 0, lang = "af" }) {
         {into} / {span} {t.toNext}
       </p>
 
-      <p className="mt-3 border-t border-cyan-400/20 pt-3 text-xs text-neutral-500">
-        {t.soon}
-      </p>
+      <QuestList lang={lang} />
     </section>
   );
 }

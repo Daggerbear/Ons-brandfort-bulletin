@@ -1,5 +1,6 @@
 // src/app/besighede/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -56,7 +57,7 @@ function matchesDescription(business, term) {
 }
 
 export default function Besighede() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [businesses, setBusinesses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -169,14 +170,7 @@ export default function Besighede() {
       )}
 
       <header className="px-6 pt-8 pb-6 text-center">
-        <div className="flex justify-end mb-4 max-w-2xl mx-auto">
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-400 hover:text-orange-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
-        </div>
+        
         <h1 className="text-4xl font-black uppercase tracking-tight">{t.title}</h1>
         <p className="text-neutral-300 mt-2 text-sm">{t.subtitle}</p>
       </header>

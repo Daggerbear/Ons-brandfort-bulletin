@@ -1,384 +1,559 @@
 // src/app/page.js
 "use client";
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import Footer from "@/components/Footer";
-import Image from "next/image";
-import SafeImage from "@/components/SafeImage";
-import FeaturedCarousel from "@/components/FeaturedCarousel";
-import LiveTicker from "@/components/LiveTicker";
-import InstallButton from "@/components/InstallButton";
-import SiteReviews from "@/components/SiteReviews";
-import WeatherWidget from "@/components/WeatherWidget";
-import ListenLiveCard from "@/components/ListenLiveCard";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
+import { useLang } from "@/components/LangProvider";
+import { timeAgo } from "@/lib/feedUi";
 import { trackEvent } from "@/lib/analytics";
+import LiveTicker from "@/components/LiveTicker";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
+import InstallButton from "@/components/InstallButton";
+import PostCard from "@/components/PostCard";
+import { ListingCard, AdCard, EventTile } from "@/components/FeedCards";
+import { SkeletonPostCard } from "@/components/Skeleton";
+import { MissionCard, HunterPromoCard } from "@/components/HunterCards";
+import { HUNTERS_ENABLED } from "@/lib/features";
 
-const BUSINESS_FALLBACK = {
-  background:
-    "repeating-linear-gradient(135deg, #431407, #431407 10px, #7c2d12 10px, #7c2d12 20px)",
-};
-const COMMUNITY_FALLBACK = {
-  background: "radial-gradient(circle at 30% 20%, #14532d, #052e16 70%)",
-};
-const EMERGENCY_FALLBACK = {
-  background:
-    "repeating-linear-gradient(135deg, #000, #000 14px, #991b1b 14px, #991b1b 28px)",
-};
+const PAGE_SIZE = 20;
+const AD_EVERY = 10; // a sponsored card after every 10th main post
+const LISTING_EVERY = 5; // so every 6th card is a Buy & Sell listing
+const MISSION_EVERY = 7; // a mission card after every 7th main post (Hunters only)
+const PROMO_AT = 3; // the "Become a Hunter" card appears after the 3rd post
+const SHOW_HOUSING_IN_ALL = false; // housing still has its own chip
 
-function ZoneBackground({ url, fallbackStyle, overlayClass }) {
-  return (
-    <>
-      <div className="absolute inset-0" style={fallbackStyle} />
-      {url && (
-        <SafeImage
-          src={url}
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover"
-        />
-      )}
-      <div className={`absolute inset-0 ${overlayClass}`} />
-    </>
-  );
+function isSeeker(job) {
+  return String(job.type || "").toLowerCase().includes("seek");
 }
 
-export default function Home() {
-  const [lang, setLang] = useState("af");
-  const [events, setEvents] = useState([]);
-  const [heroUrl, setHeroUrl] = useState(null);
-  const [logoUrl, setLogoUrl] = useState(null);
-  const [businessBgUrl, setBusinessBgUrl] = useState(null);
-  const [communityBgUrl, setCommunityBgUrl] = useState(null);
-  const [emergencyBgUrl, setEmergencyBgUrl] = useState(null);
-  const [businessCount, setBusinessCount] = useState(null);
-  const [eventCount, setEventCount] = useState(null);
+const text = {
+  af: {
+    seo: "Ons Brandfort Bulletin — Brandfort se gemeenskapsplatform",
+    welcomeTitle: "Welkom by Ons Brandfort Bulletin 👋",
+    welcomeBody:
+      "Die hart van Brandfort, op een plek: nuus, besighede, werk, koop & verkoop en speletjies. Maak 'n gratis rekening om te plaas, vlakke te verdien en jou eie profiel te kry.",
+    signIn: "Teken in met Google",
+    wait: "Wag...",
+    dismiss: "Maak toe",
+    events: "🔥 Wat Gebeur",
+    all: "Alles",
+    post: "Feed",
+    classified: "Koop & Verkoop",
+    housing: "Behuising",
+    job: "Soek werk",
+    empty: "Nog niks hier nie. Wees die eerste om iets te plaas!",
+    more: "Wys meer",
+    forRent: "Te huur",
+    forSale: "Te koop",
+    hiring: "Vakature",
+    seeking: "Soek werk",
+    priceOnRequest: "Prys op navraag",
+    bedrooms: (n) => `${n} slaapkamer${n === 1 ? "" : "s"}`,
+    mission: "Missie",
+    terms: "Bepalings",
+    privacy: "Privaatheid",
+    contact: "Kontak",
+  },
+  en: {
+    seo: "Ons Brandfort Bulletin — Brandfort's community platform",
+    welcomeTitle: "Welcome to Ons Brandfort Bulletin 👋",
+    welcomeBody:
+      "The heart of Brandfort, in one place: news, businesses, jobs, buy & sell and games. Create a free account to post, earn levels and get your own profile.",
+    signIn: "Sign in with Google",
+    wait: "Please wait...",
+    dismiss: "Close",
+    events: "🔥 What's Happening",
+    all: "All",
+    post: "Feed",
+    classified: "Buy & Sell",
+    housing: "Housing",
+    job: "Looking for work",
+    empty: "Nothing here yet. Be the first to post something!",
+    more: "Show more",
+    forRent: "For rent",
+    forSale: "For sale",
+    hiring: "Hiring",
+    seeking: "Looking for work",
+    priceOnRequest: "Price on request",
+    bedrooms: (n) => `${n} bedroom${n === 1 ? "" : "s"}`,
+    mission: "Mission",
+    terms: "Terms",
+    privacy: "Privacy",
+    contact: "Contact",
+  },
+};
 
-  const text = {
-    af: {
-      tagline: "Die hart van Brandfort, op een plek.",
-      events: "🔥 Wat Gebeur",
-      statBusinesses: "Besighede Gelys",
-      statEvents: "Gebeurtenisse",
-      businessZone: "Besigheid",
-      businessNote: "Alles wat plaaslike besighede laat groei.",
-      communityZone: "Gemeenskap",
-      communityNote: "Waar Brandfort saam lewe, deel en groei.",
-      emergency: "Nood Kontakte",
-      emergencyNote: "Belangrike nommers wanneer dit saak maak.",
-    },
-    en: {
-      tagline: "The heart of Brandfort, in one place.",
-      events: "🔥 What's Happening",
-      statBusinesses: "Businesses Listed",
-      statEvents: "Events",
-      businessZone: "Business",
-      businessNote: "Everything that helps local business grow.",
-      communityZone: "Community",
-      communityNote: "Where Brandfort lives, shares, and grows together.",
-      emergency: "Emergency Contacts",
-      emergencyNote: "Important numbers when it matters.",
-    },
-  };
+const CHIPS = ["all", "post", "classified", "housing", "job"];
 
+function formatPrice(price, onRequest, t) {
+  if (onRequest) return t.priceOnRequest;
+  const n = Number(price);
+  if (price === null || price === undefined || price === "" || !Number.isFinite(n)) return null;
+  return `R ${n.toLocaleString("en-ZA")}`;
+}
+
+export default function CommunityHome() {
+  const { lang } = useLang();
   const t = text[lang];
+  const { user, loading: authLoading, busy, signInWithGoogle } = useAuth();
 
-  const businessLinks = [
-    { icon: "🏪", label: { af: "Besighede", en: "Businesses" }, href: "/besighede" },
-    { icon: "📢", label: { af: "Opdaterings", en: "Updates" }, href: "/business-updates" },
-    { icon: "🔎", label: { af: "Vind", en: "Find" }, href: "/vind" },
-    { icon: "💼", label: { af: "Werk", en: "Jobs" }, href: "/jobs" },
-  ];
-
-  const communityLinks = [
-    { icon: "💬", label: { af: "Feed", en: "Feed" }, href: "/feed" },
-    { icon: "🛒", label: { af: "Koop/Verkoop", en: "Buy/Sell" }, href: "/classifieds" },
-    { icon: "🏠", label: { af: "Behuising", en: "Housing" }, href: "/housing" },
-    { icon: "🕹️", label: { af: "Glitch Cafe", en: "Glitch Cafe" }, href: "/games" },
-    { icon: "📅", label: { af: "Lys Gebeurtenis", en: "List Event" }, href: "/list-your-event" },
-  ];
-
-  const emergencyLinks = [
-    { icon: "🚓", label: { af: "Polisie", en: "Police" } },
-    { icon: "🚑", label: { af: "Ambulans", en: "Ambulance" } },
-    { icon: "🚒", label: { af: "Brandweer", en: "Fire" } },
-    { icon: "🏥", label: { af: "Hospitaal", en: "Hospital" } },
-  ];
+  const [data, setData] = useState({
+    posts: [],
+    classifieds: [],
+    housing: [],
+    jobs: [],
+    events: [],
+    ads: [],
+  });
+  const [comments, setComments] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [welcomeSeen, setWelcomeSeen] = useState(true);
+  const [quests, setQuests] = useState([]);
+  const [promoSeen, setPromoSeen] = useState(true);
+  const [focus, setFocus] = useState(null); // { kind, id } from ?focus=
+  const [pinned, setPinned] = useState(null);
+  const rolls = useRef({}); // one random number per item so the shuffle holds still
 
   useEffect(() => {
-    const loadData = async () => {
-      trackEvent("page_view");
+    try {
+      setWelcomeSeen(localStorage.getItem("bulletin_welcome") === "1");
+      setPromoSeen(localStorage.getItem("bulletin_hunter_promo") === "1");
+    } catch {
+      setWelcomeSeen(false);
+      setPromoSeen(false);
+    }
 
-      const { data: eventData, count: evCount } = await supabase
-        .from("events")
-        .select("*", { count: "exact" })
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
-      setEvents(eventData || []);
-      setEventCount(evCount ?? eventData?.length ?? 0);
-
-      const { count: bizCount } = await supabase
-        .from("businesses")
-        .select("*", { count: "exact", head: true })
-        .eq("Status", "approved");
-      setBusinessCount(bizCount ?? 0);
-
-      const { data: settingsData } = await supabase
-        .from("site_settings")
-        .select("hero_image_url")
-        .eq("id", 1)
-        .single();
-      setHeroUrl(settingsData?.hero_image_url || null);
-
-      const { data: siteImagesData } = await supabase
-        .from("site_images")
-        .select("key, url")
-        .in("key", [
-          "homepage_hero",
-          "business_zone_bg",
-          "community_zone_bg",
-          "emergency_zone_bg",
-          "homepage_logo",
-        ]);
-
-      const imgMap = {};
-      (siteImagesData || []).forEach((row) => {
-        imgMap[row.key] = row.url;
-      });
-
-      // The admin "Homepage Hero Background" slot wins; old site_settings image is the fallback
-      if (imgMap.homepage_hero) setHeroUrl(imgMap.homepage_hero);
-      setBusinessBgUrl(imgMap.business_zone_bg || null);
-      setCommunityBgUrl(imgMap.community_zone_bg || null);
-      setEmergencyBgUrl(imgMap.emergency_zone_bg || null);
-      setLogoUrl(imgMap.homepage_logo || null);
-    };
-    loadData();
+    // Links like /?focus=post-12 or /?filter=classified come from the profile and the post pages
+    const params = new URLSearchParams(window.location.search);
+    const f = params.get("filter");
+    if (f && CHIPS.includes(f)) setFilter(f);
+    const target = params.get("focus");
+    if (target) {
+      const dash = target.indexOf("-");
+      const kind = target.slice(0, dash);
+      const id = target.slice(dash + 1);
+      if (["post", "classified", "housing", "job"].includes(kind) && id) {
+        setFocus({ kind, id });
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    trackEvent("page_view");
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    (async () => {
+      const [p, c, h, j, e, a] = await Promise.all([
+        supabase
+          .from("posts")
+          .select("*")
+          .eq("is_hidden", false)
+          .gte("created_at", cutoff.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(40),
+        supabase
+          .from("classifieds")
+          .select("id, title, price, price_on_request, category, image_url, created_at")
+          .eq("is_hidden", false)
+          .eq("is_sold", false)
+          .order("created_at", { ascending: false })
+          .limit(15),
+        supabase
+          .from("housing")
+          .select(
+            "id, title, listing_type, property_type, area, bedrooms, price, price_on_request, image_url, created_at"
+          )
+          .eq("is_hidden", false)
+          .eq("is_taken", false)
+          .order("created_at", { ascending: false })
+          .limit(15),
+        supabase
+          .from("jobs")
+          .select("id, title, type, category, created_at")
+          .eq("is_hidden", false)
+          .eq("is_filled", false)
+          .order("created_at", { ascending: false })
+          .limit(15),
+        supabase
+          .from("events")
+          .select("id, title, date, time, image_url")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase.from("sponsored_ads").select("*").eq("active", true),
+      ]);
+
+      if (!active) return;
+      const rows = (r) => (r.error ? [] : r.data || []);
+      const posts = rows(p);
+      setData({
+        posts,
+        classifieds: rows(c),
+        housing: rows(h),
+        jobs: rows(j),
+        events: rows(e),
+        ads: rows(a),
+      });
+      setLoading(false);
+
+      if (posts.length > 0) {
+        const { data: commentRows, error } = await supabase
+          .from("comments")
+          .select("*")
+          .in("post_id", posts.map((x) => x.id))
+          .order("created_at", { ascending: true });
+        if (!active || error) return;
+        const grouped = {};
+        (commentRows || []).forEach((cm) => {
+          if (!grouped[cm.post_id]) grouped[cm.post_id] = [];
+          grouped[cm.post_id].push(cm);
+        });
+        setComments(grouped);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Hunters see their open daily missions inside the feed
+  const userId = user?.id;
+  const isHunter = HUNTERS_ENABLED && !!user?.user_metadata?.hunter;
+  useEffect(() => {
+    if (!userId || !isHunter) {
+      setQuests([]);
+      return;
+    }
+    let active = true;
+    supabase.rpc("my_quests").then(({ data: rows, error }) => {
+      if (!active || error) return;
+      setQuests((rows || []).filter((q) => q.o_period === "daily" && !q.o_done));
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId, isHunter]);
+
+  // A link that points at one post: show it at the top, even if it's older than the feed window
+  useEffect(() => {
+    if (!focus || loading) return;
+    const tables = {
+      post: ["posts", "*"],
+      classified: ["classifieds", "id, title, price, price_on_request, category, image_url, created_at"],
+      housing: ["housing", "id, title, listing_type, property_type, area, bedrooms, price, price_on_request, image_url, created_at"],
+      job: ["jobs", "id, title, type, category, created_at"],
+    };
+    const [table, cols] = tables[focus.kind];
+    let active = true;
+    supabase
+      .from(table)
+      .select(cols)
+      .eq("id", focus.id)
+      .eq("is_hidden", false)
+      .maybeSingle()
+      .then(({ data: row }) => {
+        if (active && row) setPinned({ kind: focus.kind, key: `${focus.kind}-${row.id}`, row });
+      });
+    return () => {
+      active = false;
+    };
+  }, [focus, loading]);
+
+  const addComment = (postId, comment) => {
+    setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), comment] }));
+  };
+
+  const dismissPromo = () => {
+    setPromoSeen(true);
+    try {
+      localStorage.setItem("bulletin_hunter_promo", "1");
+    } catch {}
+  };
+
+  const dismissWelcome = () => {
+    setWelcomeSeen(true);
+    try {
+      localStorage.setItem("bulletin_welcome", "1");
+    } catch {}
+  };
+
+  // Random but fair: newer posts are still more likely to land near the top
+  const roll = (key) => {
+    if (rolls.current[key] === undefined) rolls.current[key] = Math.random();
+    return rolls.current[key];
+  };
+
+  const { mainStream, listings } = useMemo(() => {
+    const seekers = data.jobs.filter(isSeeker);
+    const main = [
+      ...data.posts.map((x) => ({ kind: "post", key: `post-${x.id}`, at: x.created_at, row: x })),
+      ...seekers.map((x) => ({ kind: "job", key: `job-${x.id}`, at: x.created_at, row: x })),
+      ...(SHOW_HOUSING_IN_ALL
+        ? data.housing.map((x) => ({ kind: "housing", key: `housing-${x.id}`, at: x.created_at, row: x }))
+        : []),
+    ];
+    const cls = data.classifieds.map((x) => ({
+      kind: "classified",
+      key: `classified-${x.id}`,
+      at: x.created_at,
+      row: x,
+    }));
+
+    const byNewest = (a, b) => new Date(b.at) - new Date(a.at);
+
+    if (filter !== "all") {
+      const pool = [
+        ...main,
+        ...(filter === "housing" ? data.housing.map((x) => ({ kind: "housing", key: `housing-${x.id}`, at: x.created_at, row: x })) : []),
+        ...cls,
+      ].filter((x) => x.kind === filter);
+      return { mainStream: pool.sort(byNewest), listings: [] };
+    }
+
+    const sorted = [...main].sort(byNewest);
+    const n = Math.max(sorted.length - 1, 1);
+    const shuffled = sorted
+      .map((item, i) => ({ item, score: 0.45 * (1 - i / n) + 0.55 * roll(item.key) }))
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.item);
+    const shuffledListings = [...cls].sort((a, b) => roll(a.key) - roll(b.key));
+    return { mainStream: shuffled, listings: shuffledListings };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, filter]);
+
+  const shown = mainStream
+    .filter((x) => !pinned || x.key !== pinned.key)
+    .slice(0, visible);
+
+  // Weave in: a Buy & Sell listing after every 5th post, sponsored cards, missions
+  const withExtras = useMemo(() => {
+    const out = [];
+    if (pinned) out.push({ ...pinned, pinned: true });
+    if (filter !== "all") return [...out, ...shown];
+
+    let li = 0;
+    let mi = 0;
+    shown.forEach((item, i) => {
+      const n = i + 1;
+      out.push(item);
+
+      if (HUNTERS_ENABLED && n === PROMO_AT && user && !isHunter && !promoSeen) {
+        out.push({ kind: "promo", key: "hunter-promo" });
+      }
+      if (n % LISTING_EVERY === 0 && listings.length > 0) {
+        const l = listings[li % listings.length];
+        li++;
+        out.push({ ...l, key: `${l.key}-s${n}` });
+      }
+      if (n % MISSION_EVERY === 0 && quests.length > 0) {
+        const q = quests[mi % quests.length];
+        mi++;
+        out.push({ kind: "mission", key: `mission-${q.o_quest_id}-${n}`, row: q });
+      }
+      if (n % AD_EVERY === 0 && data.ads.length > 0) {
+        const ad = data.ads[(n / AD_EVERY - 1) % data.ads.length];
+        out.push({ kind: "ad", key: `ad-${n}`, row: ad });
+      }
+    });
+    return out;
+  }, [shown, listings, quests, pinned, filter, data.ads, user, isHunter, promoSeen]);
+
+  function renderItem(item) {
+    const card = renderCard(item);
+    if (!item.pinned) return card;
+    return (
+      <div key={item.key} className="rounded-2xl ring-2 ring-orange-500">
+        {card}
+      </div>
+    );
+  }
+
+  function renderCard(item) {
+    if (item.kind === "promo") {
+      return <HunterPromoCard key={item.key} lang={lang} onDismiss={dismissPromo} />;
+    }
+    if (item.kind === "mission") {
+      return <MissionCard key={item.key} quest={item.row} lang={lang} />;
+    }
+    const r = item.row;
+    if (item.kind === "post") {
+      return (
+        <PostCard
+          key={item.key}
+          post={r}
+          lang={lang}
+          comments={comments[r.id] || []}
+          onComment={addComment}
+        />
+      );
+    }
+    if (item.kind === "ad") return <AdCard key={item.key} ad={r} lang={lang} />;
+
+    if (item.kind === "classified") {
+      return (
+        <ListingCard
+          key={item.key}
+          href="/classifieds"
+          icon="🛒"
+          tag={t.classified}
+          tagClass="text-amber-400"
+          title={r.title}
+          meta={r.category}
+          price={formatPrice(r.price, r.price_on_request, t)}
+          image={r.image_url}
+          ago={timeAgo(r.created_at, lang)}
+        />
+      );
+    }
+    if (item.kind === "housing") {
+      const type = String(r.listing_type || "").toLowerCase();
+      const tag = type.includes("rent") || type.includes("huur")
+        ? t.forRent
+        : type.includes("sale") || type.includes("sell") || type.includes("koop")
+        ? t.forSale
+        : r.listing_type || t.housing;
+      const meta = [r.property_type, r.area, r.bedrooms ? t.bedrooms(Number(r.bedrooms)) : null]
+        .filter(Boolean)
+        .join(" · ");
+      return (
+        <ListingCard
+          key={item.key}
+          href="/housing"
+          icon="🏠"
+          tag={tag}
+          tagClass="text-sky-400"
+          title={r.title}
+          meta={meta}
+          price={formatPrice(r.price, r.price_on_request, t)}
+          image={r.image_url}
+          ago={timeAgo(r.created_at, lang)}
+        />
+      );
+    }
+    // job
+    const seeking = String(r.type || "").toLowerCase().includes("seek");
+    return (
+      <ListingCard
+        key={item.key}
+        href="/jobs"
+        icon="💼"
+        tag={seeking ? t.seeking : t.hiring}
+        tagClass="text-emerald-400"
+        title={r.title}
+        meta={r.category}
+        ago={timeAgo(r.created_at, lang)}
+      />
+    );
+  }
+
+  const showWelcome = !authLoading && !user && !welcomeSeen;
 
   return (
     <main className="min-h-screen bg-carbon text-white">
-      <header className="relative border-b border-neutral-800 px-6 pt-8 pb-12 text-center overflow-hidden min-h-[560px] flex flex-col justify-center">
-        {heroUrl && (
-          <>
-            <SafeImage
-              src={heroUrl}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover animate-kenburns"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/70" />
-          </>
-        )}
+      <h1 className="sr-only">{t.seo}</h1>
 
-        <div className="relative z-10">
-          <div className="flex justify-end mb-6">
-            <button
-              onClick={() => setLang(lang === "af" ? "en" : "af")}
-              className="text-sm border border-neutral-500 bg-black/30 backdrop-blur-sm rounded-full px-3 py-1 text-neutral-200 hover:border-orange-500 hover:text-orange-400 transition"
-            >
-              {lang === "af" ? "English" : "Afrikaans"}
-            </button>
-          </div>
-
-          <div className="flex justify-center mb-5">
-            <Image
-              src={logoUrl || "/logo.png"}
-              alt="Ons Brandfort Bulletin"
-              width={140}
-              height={140}
-              priority
-            />
-          </div>
-
-          <h1 className="text-[3.25rem] leading-[0.92] sm:text-7xl font-black tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-            Ons Brandfort
-            <br />
-            <span className="text-orange-500">Bulletin</span>
-          </h1>
-          <p className="text-neutral-100 mt-4 text-xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-            {t.tagline}
-          </p>
-          <p className="text-neutral-300 mt-3 text-sm max-w-md mx-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-            {lang === "af"
-              ? "'n Gratis platform waar elke plaaslike besigheid en gemeenskapsgeleentheid op een plek is."
-              : "A free platform where every local business and community event lives in one place."}
-          </p>
-
-          <div className="mt-8 flex justify-center">
-            <InstallButton lang={lang} />
-          </div>
-
-          <div className="mt-10 flex justify-center gap-10 sm:gap-16">
-            <div>
-              <p className="text-4xl sm:text-5xl font-black text-orange-500 tabular-nums">
-                {businessCount !== null ? businessCount : "–"}
-              </p>
-              <p className="text-xs text-neutral-300 mt-1">{t.statBusinesses}</p>
-            </div>
-            <div className="w-px bg-neutral-600" />
-            <div>
-              <p className="text-4xl sm:text-5xl font-black text-orange-500 tabular-nums">
-                {eventCount !== null ? eventCount : "–"}
-              </p>
-              <p className="text-xs text-neutral-300 mt-1">{t.statEvents}</p>
-            </div>
-          </div>
-        </div>
-      </header>
       <LiveTicker lang={lang} />
 
-      <WeatherWidget lang={lang} />
+      <div className="mx-auto max-w-2xl space-y-3 px-4 pt-3">
+        {showWelcome && (
+          <section className="relative rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 to-neutral-900 p-4">
+            <button
+              onClick={dismissWelcome}
+              aria-label={t.dismiss}
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-sm text-neutral-300 hover:text-white"
+            >
+              ✕
+            </button>
+            <h2 className="pr-8 text-lg font-bold">{t.welcomeTitle}</h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-neutral-300">{t.welcomeBody}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                onClick={signInWithGoogle}
+                disabled={busy}
+                className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-black transition hover:bg-orange-600 disabled:opacity-50"
+              >
+                {busy ? t.wait : t.signIn}
+              </button>
+              <InstallButton lang={lang} />
+            </div>
+          </section>
+        )}
+
+      </div>
 
       <FeaturedCarousel lang={lang} />
 
-      <section className="py-6 border-b border-neutral-800">
-        <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-400 mb-3">
+      {data.events.length > 0 && (
+        <section className="mx-auto mt-3 max-w-2xl px-4">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-neutral-400">
             {t.events}
           </h2>
-          {events.length === 0 ? (
-            <p className="text-neutral-500 text-sm">
-              {lang === "af" ? "Nog geen gebeurtenisse nie." : "No events yet."}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {events.slice(0, 4).map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/events/${event.id}`}
-                  className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 hover:border-orange-500 transition rounded-lg px-3 py-2.5"
-                >
-                  <SafeImage
-                    src={event.image_url}
-                    alt={event.title}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 object-cover rounded-md flex-shrink-0"
-                    fallback={
-                      <div className="w-10 h-10 rounded-md bg-neutral-800 flex-shrink-0" />
-                    }
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{event.title}</p>
-                    <p className="text-xs text-neutral-500 truncate">
-                      {event.date} {event.time && `· ${event.time}`}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Business / Community / Emergency — full-width photo zones */}
-      <section className="py-8">
-        <Link
-          href="/business"
-          className="relative block overflow-hidden border-y border-orange-500/40 min-h-[280px] flex flex-col justify-end hover:brightness-110 transition"
-        >
-          <ZoneBackground
-            url={businessBgUrl}
-            fallbackStyle={BUSINESS_FALLBACK}
-            overlayClass="bg-gradient-to-t from-orange-950/95 via-orange-950/50 to-orange-950/20"
-          />
-          <div className="relative z-10 px-6 pb-6 pt-16">
-            <h3 className="text-white font-black uppercase tracking-wide text-2xl mb-1 flex items-center gap-2">
-              🏗️ {t.businessZone}
-            </h3>
-            <p className="text-sm text-neutral-200 mb-4">{t.businessNote}</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {businessLinks.map((item) => (
-                <div
-                  key={item.href}
-                  className="flex-shrink-0 flex flex-col items-center text-center gap-1 bg-black/40 backdrop-blur-sm rounded-lg p-2.5 w-20"
-                >
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className="text-[11px] font-semibold text-white leading-tight">
-                    {item.label[lang]}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+            {data.events.map((ev) => (
+              <EventTile key={ev.id} event={ev} />
+            ))}
           </div>
-        </Link>
+        </section>
+      )}
 
-        <Link
-          href="/community"
-          className="relative block overflow-hidden border-y border-green-500/40 min-h-[280px] flex flex-col justify-end hover:brightness-110 transition mt-3"
-        >
-          <ZoneBackground
-            url={communityBgUrl}
-            fallbackStyle={COMMUNITY_FALLBACK}
-            overlayClass="bg-gradient-to-t from-green-950/95 via-green-950/50 to-green-950/20"
-          />
-          <div className="relative z-10 px-6 pb-6 pt-16">
-            <h3 className="text-white font-black uppercase tracking-wide text-2xl mb-1 flex items-center gap-2">
-              🌱 {t.communityZone}
-            </h3>
-            <p className="text-sm text-neutral-200 mb-4">{t.communityNote}</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {communityLinks.map((item) => (
-                <div
-                  key={item.href}
-                  className="flex-shrink-0 flex flex-col items-center text-center gap-1 bg-black/40 backdrop-blur-sm rounded-lg p-2.5 w-20"
-                >
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className="text-[11px] font-semibold text-white leading-tight">
-                    {item.label[lang]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/emergency"
-          className="relative block overflow-hidden border-y border-red-500/60 min-h-[280px] flex flex-col justify-center hover:brightness-110 transition mt-3"
-        >
-          <ZoneBackground
-            url={emergencyBgUrl}
-            fallbackStyle={EMERGENCY_FALLBACK}
-            overlayClass="bg-black/25"
-          />
-          <div className="relative z-10 px-6 py-12 text-center">
-            <h3
-              className="text-white font-black uppercase tracking-wide text-2xl mb-1 flex items-center justify-center gap-2"
-              style={{ textShadow: "0 0 18px rgba(239,68,68,0.8)" }}
+      {/* Filter chips stay under the top bar while you scroll */}
+      <div className="sticky top-14 z-30 mt-3 border-y border-neutral-800 bg-neutral-950/95 backdrop-blur-md">
+        <div className="scrollbar-hide mx-auto flex max-w-2xl gap-2 overflow-x-auto px-4 py-2.5">
+          {CHIPS.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => {
+                setFilter(chip);
+                setVisible(PAGE_SIZE);
+              }}
+              className={`flex-shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+                filter === chip
+                  ? "border-orange-500 bg-orange-500 text-black"
+                  : "border-neutral-700 text-neutral-300 hover:border-orange-500"
+              }`}
             >
-              🚨 {t.emergency}
-            </h3>
-            <p className="text-sm text-neutral-200 mb-4">{t.emergencyNote}</p>
-            <div className="flex gap-2 justify-center overflow-x-auto pb-1">
-              {emergencyLinks.map((item) => (
-                <div
-                  key={item.icon}
-                  className="flex-shrink-0 flex flex-col items-center text-center gap-1 bg-black/50 backdrop-blur-sm border border-red-500/30 rounded-lg p-2.5 w-20"
-                >
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className="text-[11px] font-semibold text-white leading-tight">
-                    {item.label[lang]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Link>
+              {t[chip]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <section className="mx-auto max-w-2xl space-y-3 px-4 py-4">
+        {loading ? (
+          <>
+            <SkeletonPostCard />
+            <SkeletonPostCard />
+            <SkeletonPostCard />
+          </>
+        ) : withExtras.length === 0 ? (
+          <p className="py-10 text-center text-sm text-neutral-500">{t.empty}</p>
+        ) : (
+          withExtras.map(renderItem)
+        )}
+
+        {!loading && mainStream.length > visible && (
+          <button
+            onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            className="w-full rounded-full border border-neutral-700 py-3 text-sm font-medium text-neutral-200 transition hover:border-orange-500 hover:text-orange-400"
+          >
+            {t.more}
+          </button>
+        )}
+
+        <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1 pt-6 text-xs text-neutral-500">
+          <Link href="/mission" className="underline hover:text-orange-400">{t.mission}</Link>
+          <Link href="/terms" className="underline hover:text-orange-400">{t.terms}</Link>
+          <Link href="/privacy" className="underline hover:text-orange-400">{t.privacy}</Link>
+          <Link href="/contact" className="underline hover:text-orange-400">{t.contact}</Link>
+        </nav>
       </section>
-
-      {/* Listen Live — Veldbrand Radio */}
-      <section className="px-6 pb-4 max-w-2xl mx-auto w-full">
-        <ListenLiveCard lang={lang} />
-      </section>
-
-      <SiteReviews lang={lang} />
-
-      <Footer lang={lang} />
     </main>
   );
 }

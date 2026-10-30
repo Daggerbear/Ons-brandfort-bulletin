@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import Nav from "@/components/Nav";
+import { useLang } from "@/components/LangProvider";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
@@ -56,27 +56,6 @@ function timeAgo(dateStr, lang) {
   return lang === "af" ? "nou" : "now";
 }
 
-// Resize to max 1400px wide and save as a light JPEG.
-// Falls back to the original file if anything goes wrong or it wouldn't get smaller.
-async function compressPhoto(file, maxWidth = 1400, quality = 0.8) {
-  try {
-    if (!file.type.startsWith("image/")) return file;
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxWidth / bitmap.width);
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", quality)
-    );
-    if (!blob || blob.size >= file.size) return file;
-    return blob;
-  } catch {
-    return file;
-  }
-}
-
 const text = {
   af: {
     title: "Behuising",
@@ -85,25 +64,8 @@ const text = {
       "Alle reëlings gebeur direk tussen jou en die eienaar via WhatsApp — Bulletin is nie deel van enige huur- of koopooreenkoms nie. Besigtig altyd eers voordat jy betaal.",
     privacyNote: "Deur te plaas, stem jy in tot ons",
     privacyLink: "privaatheidsbeleid",
-    postBtn: "+ Plaas 'n Eiendom",
-    cancel: "Kanselleer",
-    name: "Jou naam",
-    whatsapp: "WhatsApp nommer (bv. 0821234567)",
-    listingTitle: "Titel (bv. 2-slaapkamer huis)",
-    description: "Beskrywing (reëls, beskikbaarheid, borg...)",
-    area: "Area / voorstad (bv. Majwemasweu)",
-    bedrooms: "Slaapkamers",
-    bathrooms: "Badkamers",
-    anyOption: "—",
     priceOnRequest: "Prys op aanvraag",
-    priceRent: "Huur per maand (R)",
-    priceSale: "Verkoopprys (R)",
     perMonth: "/maand",
-    addPhoto: "Voeg 'n foto by (opsioneel)",
-    changePhoto: "Verander foto",
-    removePhoto: "Verwyder",
-    posting: "Plaas tans...",
-    postListing: "Plaas Eiendom",
     by: "deur",
     whatsappBtn: "💬 WhatsApp",
     markRented: "Merk as Verhuur",
@@ -118,8 +80,6 @@ const text = {
     beFirst: "Wees die eerste een!",
     confirmRented: "Merk hierdie eiendom as verhuur?",
     confirmSold: "Merk hierdie eiendom as verkoop?",
-    errorPhoto: "Kon nie die foto oplaai nie. Probeer 'n ander foto, of verwyder dit en probeer weer.",
-    errorPost: "Kon nie jou eiendom plaas nie. Probeer asseblief weer.",
     bedShort: "slaapkamer(s)",
     bathShort: "badkamer(s)",
     whatsappMsg: (title) => `Hi, ek het jou eiendom "${title}" op Ons Brandfort Bulletin gesien`,
@@ -131,25 +91,8 @@ const text = {
       "All arrangements happen directly between you and the owner via WhatsApp — Bulletin isn't part of any rental or sale agreement. Always view the place before you pay anything.",
     privacyNote: "By posting, you agree to our",
     privacyLink: "privacy policy",
-    postBtn: "+ Post a Property",
-    cancel: "Cancel",
-    name: "Your name",
-    whatsapp: "WhatsApp number (e.g. 0821234567)",
-    listingTitle: "Title (e.g. 2-bedroom house)",
-    description: "Description (rules, availability, deposit...)",
-    area: "Area / suburb (e.g. Majwemasweu)",
-    bedrooms: "Bedrooms",
-    bathrooms: "Bathrooms",
-    anyOption: "—",
     priceOnRequest: "Price on request",
-    priceRent: "Rent per month (R)",
-    priceSale: "Asking price (R)",
     perMonth: "/month",
-    addPhoto: "Add a photo (optional)",
-    changePhoto: "Change photo",
-    removePhoto: "Remove",
-    posting: "Posting...",
-    postListing: "Post Property",
     by: "by",
     whatsappBtn: "💬 WhatsApp",
     markRented: "Mark as Rented",
@@ -164,8 +107,6 @@ const text = {
     beFirst: "Be the first!",
     confirmRented: "Mark this property as rented?",
     confirmSold: "Mark this property as sold?",
-    errorPhoto: "Couldn't upload the photo. Try a different photo, or remove it and try again.",
-    errorPost: "Couldn't post your property. Please try again.",
     bedShort: "bed",
     bathShort: "bath",
     whatsappMsg: (title) => `Hi, I saw your property "${title}" on Ons Brandfort Bulletin`,
@@ -173,29 +114,12 @@ const text = {
 };
 
 export default function Housing() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [myListings, setMyListings] = useState([]);
   const [typeFilter, setTypeFilter] = useState("all");
   const [propFilter, setPropFilter] = useState("all");
-
-  const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [listingType, setListingType] = useState("rent");
-  const [propertyType, setPropertyType] = useState("House");
-  const [area, setArea] = useState("");
-  const [bedrooms, setBedrooms] = useState("");
-  const [bathrooms, setBathrooms] = useState("");
-  const [price, setPrice] = useState("");
-  const [priceOnRequest, setPriceOnRequest] = useState(false);
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
 
   const t = text[lang];
 
@@ -214,98 +138,6 @@ export default function Housing() {
       .order("created_at", { ascending: false });
     if (!error) setListings(data);
     setLoading(false);
-  }
-
-  function handlePhotoChange(e) {
-    const picked = e.target.files[0];
-    if (!picked) return;
-    setImage(picked);
-    setPreview(URL.createObjectURL(picked));
-  }
-
-  function removePhoto() {
-    setImage(null);
-    setPreview(null);
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!name.trim() || !whatsapp.trim() || !title.trim() || !description.trim()) return;
-    setSubmitting(true);
-    setErrorMsg("");
-
-    let image_url = null;
-    if (image) {
-      const uploadFile = await compressPhoto(image);
-      const compressed = uploadFile !== image;
-      const fileExt = compressed ? "jpg" : image.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("housing")
-        .upload(
-          fileName,
-          uploadFile,
-          compressed ? { contentType: "image/jpeg" } : undefined
-        );
-
-      if (uploadError) {
-        console.log("Upload error:", uploadError);
-        setErrorMsg(t.errorPhoto);
-        setSubmitting(false);
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("housing")
-        .getPublicUrl(fileName);
-      image_url = publicUrlData.publicUrl;
-    }
-
-    const { data, error } = await supabase
-      .from("housing")
-      .insert({
-        name: name.trim(),
-        whatsapp: whatsapp.trim(),
-        title: title.trim(),
-        description: description.trim(),
-        listing_type: listingType,
-        property_type: propertyType,
-        area: area.trim() || null,
-        bedrooms: bedrooms === "" ? null : parseInt(bedrooms, 10),
-        bathrooms: bathrooms === "" ? null : parseInt(bathrooms, 10),
-        price: priceOnRequest ? null : price ? parseFloat(price) : null,
-        price_on_request: priceOnRequest,
-        image_url,
-      })
-      .select()
-      .single();
-
-    setSubmitting(false);
-
-    if (!error && data) {
-      const updated = [...myListings, data.id];
-      localStorage.setItem("myHousing", JSON.stringify(updated));
-      setMyListings(updated);
-      setShowForm(false);
-      setName("");
-      setWhatsapp("");
-      setTitle("");
-      setDescription("");
-      setListingType("rent");
-      setPropertyType("House");
-      setArea("");
-      setBedrooms("");
-      setBathrooms("");
-      setPrice("");
-      setPriceOnRequest(false);
-      setImage(null);
-      setPreview(null);
-      fetchListings();
-    } else {
-      console.log("Error posting property:", error);
-      setErrorMsg(t.errorPost);
-    }
   }
 
   async function markTaken(item) {
@@ -352,9 +184,6 @@ export default function Housing() {
     .filter((l) => propFilter === "all" || findPropertyType(l.property_type)?.value === propFilter)
     .sort((a, b) => Number(!!a.is_taken) - Number(!!b.is_taken));
 
-  const inputClass =
-    "w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-sky-500";
-
   const pillClass = (active) =>
     `px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition ${
       active
@@ -364,8 +193,6 @@ export default function Housing() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
-      <Nav lang={lang} />
-
       <header
         className="border-b border-sky-900/60 px-4 pt-6 pb-6"
         style={{
@@ -379,12 +206,6 @@ export default function Housing() {
             </h1>
             <p className="text-sm text-neutral-300 mt-1">{t.sub}</p>
           </div>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-sky-400 hover:text-sky-400 transition flex-shrink-0"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
       </header>
 
@@ -400,197 +221,6 @@ export default function Housing() {
             .
           </p>
         </div>
-
-        {/* Post button */}
-        <button
-          onClick={() => {
-            setShowForm(!showForm);
-            setErrorMsg("");
-          }}
-          className={`w-full transition rounded-xl py-3 font-semibold mb-5 ${
-            showForm
-              ? "bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
-              : "bg-sky-500 hover:bg-sky-600 text-black"
-          }`}
-        >
-          {showForm ? t.cancel : t.postBtn}
-        </button>
-
-        {/* Form */}
-        {showForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-neutral-900 border border-sky-500/30 rounded-2xl p-5 mb-6 space-y-3"
-          >
-            {/* Rent / Sale toggle */}
-            <div className="grid grid-cols-2 gap-2">
-              {LISTING_TYPES.map((lt) => (
-                <button
-                  key={lt.value}
-                  type="button"
-                  onClick={() => setListingType(lt.value)}
-                  className={`rounded-lg py-3 text-sm font-semibold border transition ${
-                    listingType === lt.value
-                      ? "bg-sky-500 border-sky-500 text-black"
-                      : "bg-neutral-950 border-neutral-700 text-neutral-300 hover:border-neutral-500"
-                  }`}
-                >
-                  {lt.icon} {lt[lang]}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t.name}
-              maxLength={40}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder={t.whatsapp}
-              maxLength={20}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t.listingTitle}
-              maxLength={80}
-              required
-              className={inputClass}
-            />
-
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-              className={inputClass}
-            >
-              {PROPERTY_TYPES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.icon} {c[lang]}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              placeholder={t.area}
-              maxLength={60}
-              className={inputClass}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value)}
-                className={inputClass}
-                aria-label={t.bedrooms}
-              >
-                <option value="">🛏️ {t.bedrooms} {t.anyOption}</option>
-                <option value="0">0 (Studio / Room)</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5+</option>
-              </select>
-              <select
-                value={bathrooms}
-                onChange={(e) => setBathrooms(e.target.value)}
-                className={inputClass}
-                aria-label={t.bathrooms}
-              >
-                <option value="">🚿 {t.bathrooms} {t.anyOption}</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3+</option>
-              </select>
-            </div>
-
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t.description}
-              rows={3}
-              maxLength={600}
-              required
-              className={inputClass}
-            />
-
-            <label className="flex items-center gap-2 text-sm text-neutral-400">
-              <input
-                type="checkbox"
-                checked={priceOnRequest}
-                onChange={(e) => setPriceOnRequest(e.target.checked)}
-              />
-              {t.priceOnRequest}
-            </label>
-
-            {!priceOnRequest && (
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder={listingType === "rent" ? t.priceRent : t.priceSale}
-                className={inputClass}
-              />
-            )}
-
-            <label className="flex items-center justify-center gap-2 bg-neutral-950 border border-neutral-700 hover:border-sky-500 transition rounded-lg px-4 py-3 cursor-pointer">
-              📷 {image ? t.changePhoto : t.addPhoto}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-            </label>
-
-            {preview && (
-              <div className="relative inline-block">
-                <img
-                  src={preview}
-                  alt="Photo preview"
-                  className="w-32 h-32 object-cover rounded-lg border border-neutral-800"
-                />
-                <button
-                  type="button"
-                  onClick={removePhoto}
-                  aria-label={t.removePhoto}
-                  className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-neutral-800 border border-neutral-600 text-neutral-200 hover:text-red-400 flex items-center justify-center text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {errorMsg && (
-              <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-sm rounded-lg px-4 py-3">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-sky-500 hover:bg-sky-600 text-black transition rounded-lg py-3 font-semibold disabled:opacity-50"
-            >
-              {submitting ? t.posting : t.postListing}
-            </button>
-          </form>
-        )}
 
         {/* Filters */}
         {!loading && listings.length > 0 && (
@@ -642,7 +272,8 @@ export default function Housing() {
               <article
                 key={item.id}
                 className={`bg-neutral-900 border border-neutral-800 rounded-2xl p-4 ${
-                  item.is_taken ? "opacity-50" : ""            }`}
+                  item.is_taken ? "opacity-50" : ""
+                }`}
               >
                 {item.image_url && (
                   <div className="relative w-full h-56 mb-3 rounded-xl overflow-hidden bg-neutral-950">
@@ -743,7 +374,7 @@ export default function Housing() {
               </article>
             );
           })}
-</div>
+        </div>
 
         {!loading && visible.length === 0 && (
           <div className="text-center py-12">
@@ -752,7 +383,9 @@ export default function Housing() {
               {listings.length === 0 ? t.noListings : t.noListingsFilter}
             </p>
             {listings.length === 0 && (
-              <p className="text-neutral-500 text-sm">{t.beFirst}</p>
+              <Link href="/create/housing" className="text-sky-400 text-sm font-semibold underline">
+                {t.beFirst}
+              </Link>
             )}
           </div>
         )}

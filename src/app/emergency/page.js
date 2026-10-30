@@ -1,5 +1,6 @@
 // src/app/emergency/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
@@ -32,7 +33,7 @@ function priorityFor(category) {
 }
 
 export default function Emergency() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -117,14 +118,7 @@ export default function Emergency() {
           background: "radial-gradient(circle at 50% 0%, #7f1d1d, #0a0a0a 75%)",
         }}
       >
-        <div className="flex justify-end mb-4 max-w-2xl mx-auto">
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-red-400 hover:text-red-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
-        </div>
+        
         <div className="text-5xl mb-2">🚨</div>
         <h1 className="text-3xl font-black uppercase tracking-tight">
           {t.title1} <span className="text-red-500">{t.title2}</span>

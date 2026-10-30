@@ -1,11 +1,12 @@
 // src/app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
-import TopNav from "@/components/TopNav";
+import AppShell from "@/components/AppShell";
 import "./globals.css";
 import BulletinHelper from "@/components/BulletinHelper";
 import RadioPlayer from "@/components/RadioPlayer";
 import { AuthProvider } from "@/components/AuthProvider";
+import { LangProvider } from "@/components/LangProvider";
 
 
 const geistSans = Geist({
@@ -73,12 +74,13 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pt-14">
+      <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <TopNav />
-          {children}
-          <RadioPlayer />
-          <BulletinHelper />
+          <LangProvider>
+            <AppShell>{children}</AppShell>
+            <RadioPlayer />
+            <BulletinHelper />
+          </LangProvider>
         </AuthProvider>
         <Analytics />
       </body>

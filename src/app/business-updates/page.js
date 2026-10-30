@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import Nav from "@/components/Nav";
+import { useLang } from "@/components/LangProvider";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
@@ -51,7 +51,7 @@ function timeAgo(dateStr, lang) {
 }
 
 export default function BusinessUpdates() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -220,7 +220,6 @@ export default function BusinessUpdates() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col relative">
-      <Nav lang={lang} />
 
       {/* Header */}
       <header
@@ -236,12 +235,6 @@ export default function BusinessUpdates() {
             </h1>
             <p className="text-sm text-neutral-300 mt-1">{t.sub}</p>
           </div>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-amber-400 hover:text-amber-400 transition flex-shrink-0"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
       </header>
 
@@ -320,15 +313,6 @@ export default function BusinessUpdates() {
           </section>
         )}
       </div>
-
-      {/* Floating + button */}
-      <Link
-        href="/business-updates/submit"
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 transition text-black text-3xl font-bold flex items-center justify-center shadow-lg shadow-amber-500/30 z-50"
-        aria-label="Post an update"
-      >
-        +
-      </Link>
 
       <Footer lang={lang} />
     </main>

@@ -1,6 +1,7 @@
 // src/components/SiteReviews.js
 "use client";
 import { useState, useEffect } from "react";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import { supabase } from "@/lib/supabase";
 
 const AVATAR_COLORS = [
@@ -80,6 +81,10 @@ export default function SiteReviews({ lang }) {
   const [showForm, setShowForm] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [name, setName] = useState("");
+  const suggestedName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedName) setName((current) => current || suggestedName);
+  }, [suggestedName]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);

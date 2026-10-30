@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useLang } from "@/components/LangProvider";
+import { useSuggestedName } from "@/lib/useSuggestedName";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
@@ -20,11 +22,15 @@ const categories = [
 ];
 
 export default function NewPost() {
-  const [lang, setLang] = useState("af");
+  const { lang, setLang } = useLang();
   const [rulesOpen, setRulesOpen] = useState(false);
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const suggestedName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedName) setName((current) => current || suggestedName);
+  }, [suggestedName]);
   const [category, setCategory] = useState("question");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -150,12 +156,6 @@ export default function NewPost() {
       <div className="max-w-2xl mx-auto px-4 py-6 flex-1 w-full">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">{t.heading}</h1>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
 
         <button

@@ -1,5 +1,6 @@
 // app/business/[id]/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -70,7 +71,7 @@ const text = {
 
 export default function BusinessDetail() {
   const { id } = useParams();
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [business, setBusiness] = useState(null);
   const [menuEnabled, setMenuEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -205,12 +206,6 @@ export default function BusinessDetail() {
             >
               ← {t.back}
             </Link>
-            <button
-              onClick={() => setLang(lang === "af" ? "en" : "af")}
-              className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-400 hover:text-orange-400 transition"
-            >
-              {lang === "af" ? "English" : "Afrikaans"}
-            </button>
           </div>
 
           <div className="flex items-center gap-4">

@@ -1,5 +1,6 @@
 // src/app/community/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -44,7 +45,7 @@ const text = {
 };
 
 export default function CommunityHub() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [bgUrl, setBgUrl] = useState(null);
   const [events, setEvents] = useState([]);
   const [eventCount, setEventCount] = useState(null);
@@ -103,14 +104,7 @@ export default function CommunityHub() {
         />
 
         <div className="relative z-10">
-          <div className="flex justify-end mb-6 max-w-2xl mx-auto">
-            <button
-              onClick={() => setLang(lang === "af" ? "en" : "af")}
-              className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-green-400 hover:text-green-400 transition"
-            >
-              {lang === "af" ? "English" : "Afrikaans"}
-            </button>
-          </div>
+          
 
           <div className="text-5xl mb-3">🌱</div>
           <h1 className="text-5xl sm:text-6xl font-black tracking-tight">

@@ -1,4 +1,5 @@
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -10,7 +11,7 @@ import { SkeletonList, SkeletonBusinessListRow } from "@/components/Skeleton";
 
 export default function CategoryBusinesses() {
   const { category: categorySlug } = useParams();
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [businesses, setBusinesses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -88,12 +89,6 @@ export default function CategoryBusinesses() {
           <Link href="/besighede" className="text-sm text-orange-400 hover:text-orange-300">
             {t.back}
           </Link>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-400 hover:text-orange-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
 
         {categoryInfo ? (

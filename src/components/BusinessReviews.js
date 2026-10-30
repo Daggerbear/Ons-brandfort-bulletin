@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import { supabase } from "@/lib/supabase";
 
 const text = {
@@ -27,6 +28,10 @@ const text = {
 
 export default function BusinessReviews({ businessId, reviews, lang, onPosted }) {
   const [name, setName] = useState("");
+  const suggestedName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedName) setName((current) => current || suggestedName);
+  }, [suggestedName]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);

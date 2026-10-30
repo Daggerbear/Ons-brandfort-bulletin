@@ -1,5 +1,6 @@
 // app/business-updates/submit/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
@@ -16,7 +17,7 @@ const CATEGORIES = [
 ];
 
 export default function SubmitBusinessUpdate() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [submitted, setSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [businesses, setBusinesses] = useState([]);
@@ -172,12 +173,6 @@ export default function SubmitBusinessUpdate() {
     <main className="min-h-screen bg-neutral-950 text-white px-6 py-10 flex flex-col">
       <Nav lang={lang} />
       <div className="max-w-md mx-auto mt-8 flex-1 w-full">
-        <button
-          onClick={() => setLang(lang === "af" ? "en" : "af")}
-          className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition mb-8"
-        >
-          {lang === "af" ? "English" : "Afrikaans"}
-        </button>
 
         {!submitted ? (
           <>

@@ -1,5 +1,6 @@
 // src/app/list-your-event/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
@@ -28,7 +29,7 @@ async function compressPhoto(file, maxWidth = 1400, quality = 0.8) {
 }
 
 export default function ListEvent() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [submitted, setSubmitted] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -186,14 +187,7 @@ export default function ListEvent() {
         }}
       >
         <div className="max-w-md mx-auto">
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => setLang(lang === "af" ? "en" : "af")}
-              className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-green-400 hover:text-green-400 transition"
-            >
-              {lang === "af" ? "English" : "Afrikaans"}
-            </button>
-          </div>
+          
           <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
             📅 <span className="text-green-400">{t.heading}</span>
           </h1>

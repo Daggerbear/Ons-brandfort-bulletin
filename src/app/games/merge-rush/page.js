@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import GameSponsorBanner from "@/components/GameSponsorBanner";
@@ -101,6 +102,10 @@ export default function MergeRush() {
   const [won, setWon] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [playerName, setPlayerName] = useState("");
+  const suggestedPlayerName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedPlayerName) setPlayerName((current) => current || suggestedPlayerName);
+  }, [suggestedPlayerName]);
   const [scoreSaved, setScoreSaved] = useState(false);
 
   const gridRef = useRef(grid);

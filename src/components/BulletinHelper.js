@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useLang } from "@/components/LangProvider";
 import { getReply, getGreeting, BOT_NAME } from "@/lib/botBrain";
 import { trackEvent } from "@/lib/analytics";
 import { QUICK_TAGS, TEXT, findMenuItems } from "@/components/helper/helperData";
@@ -12,7 +13,7 @@ import { EventCard, BusinessCard, MenuHitRow } from "@/components/helper/HelperC
 export default function BulletinHelper() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [lang, setLang] = useState("af");
+  const { lang, setLang } = useLang();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [showHint, setShowHint] = useState(false);
@@ -25,16 +26,9 @@ export default function BulletinHelper() {
   // Pages where the floating button would get in the way
   const hidden =
     pathname === "/vind" ||
+    (pathname || "").startsWith("/create") ||
     (pathname || "").startsWith("/games/") ||
     (pathname || "").startsWith("/admin");
-
-  // remember the language she was last used in
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("bulletin_helper_lang");
-      if (saved === "af" || saved === "en") setLang(saved);
-    } catch {}
-  }, []);
 
   // a gentle "need a hand?" once per visit
   useEffect(() => {
@@ -179,15 +173,10 @@ export default function BulletinHelper() {
     );
   };
 
-  const switchLang = () => {
-    const next = lang === "af" ? "en" : "af";
-    setLang(next);
-    try {
-      localStorage.setItem("bulletin_helper_lang", next);
-    } catch {}
-  };
+  const switchLang = () => setLang(lang === "af" ? "en" : "af");
 
-  const bottomOffset = "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)";
+  // Sits above the bottom tab bar
+  const bottomOffset = "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)";
   const close = () => setOpen(false);
 
   return (
@@ -202,7 +191,7 @@ export default function BulletinHelper() {
                 setOpen(true);
               }}
               className="fixed right-4 z-40 bg-neutral-900 border border-orange-500/40 text-neutral-100 text-sm font-medium rounded-2xl rounded-br-sm px-4 py-2 shadow-lg"
-              style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
+              style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 9.5rem)" }}
             >
               {t.hint}
             </button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLang } from "@/components/LangProvider";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -68,7 +70,7 @@ export default function BusinessMenuPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const isPreview = searchParams.get("preview") === "1";
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [business, setBusiness] = useState(null);
   const [settings, setSettings] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -82,6 +84,10 @@ export default function BusinessMenuPage() {
   // null = category selection page, "all" = full menu, otherwise a category id
   const [activeCategory, setActiveCategory] = useState(null);
   const [customerName, setCustomerName] = useState("");
+  const suggestedCustomerName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedCustomerName) setCustomerName((current) => current || suggestedCustomerName);
+  }, [suggestedCustomerName]);
   const [orderType, setOrderType] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
@@ -644,12 +650,6 @@ export default function BusinessMenuPage() {
               ← {t.backToCategories}
             </button>
           )}
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
 
         {showingCategories ? (

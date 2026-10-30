@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import Nav from "@/components/Nav";
+import { useLang } from "@/components/LangProvider";
 import SafeImage from "@/components/SafeImage";
 import { SkeletonList, SkeletonPostCard } from "@/components/Skeleton";
 
@@ -62,7 +62,7 @@ function timeAgo(dateStr, lang) {
 }
 
 export default function Feed() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [posts, setPosts] = useState([]);
   const [ads, setAds] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -241,7 +241,6 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-black text-white relative">
-      <Nav lang={lang} setLang={setLang} />
 
       {/* Header */}
       <header
@@ -261,12 +260,6 @@ export default function Feed() {
                 : "Questions, news, shoutouts and videos from your neighbours."}
             </p>
           </div>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-green-400 hover:text-green-400 transition flex-shrink-0"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
       </header>
 
@@ -502,7 +495,7 @@ export default function Feed() {
                         }
                         value={commentText[item.data.id] || ""}
      onChange={(e) =>
-                          setCommentText((prev) => ({
+             setCommentText((prev) => ({
                             ...prev,
                             [item.data.id]: e.target.value.slice(0, 300),
                           }))
@@ -535,13 +528,6 @@ export default function Feed() {
           )}
         </div>
       </div>
-
-      <Link
-        href="/feed/new"
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 transition text-black text-3xl font-bold flex items-center justify-center shadow-lg shadow-green-500/30 z-50"
-      >
-        +
-      </Link>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import Nav from "@/components/Nav";
+import { useLang } from "@/components/LangProvider";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { SkeletonList, SkeletonPostCard } from "@/components/Skeleton";
@@ -59,18 +59,6 @@ const text = {
     privacyLink: "privaatheidsbeleid",
     tabJob: "💼 Vakatures",
     tabSeeker: "🙋 Soek Werk",
-    postJob: "+ Plaas 'n Vakature",
-    postSeeker: "+ Plaas Beskikbaarheid",
-    cancel: "Kanselleer",
-    name: "Jou naam",
-    whatsapp: "WhatsApp nommer (bv. 0821234567)",
-    jobTitlePlaceholder: "Werktitel (bv. Kassier benodig)",
-    seekerTitlePlaceholder: "Watter werk soek jy?",
-    jobDescPlaceholder: "Werksbesonderhede, ure, vereistes...",
-    seekerDescPlaceholder: "Jou ervaring, beskikbaarheid...",
-    posting: "Plaas tans...",
-    postingJob: "Plaas Vakature",
-    postingSeeker: "Plaas Beskikbaarheid",
     by: "deur",
     whatsappBtn: "💬 WhatsApp",
     markFilledJob: "Merk as Gevul",
@@ -83,7 +71,6 @@ const text = {
     beFirst: "Wees die eerste een!",
     confirmJob: "Merk hierdie werk as gevul?",
     confirmSeeker: "Merk jouself as nie meer beskikbaar nie?",
-    errorPost: "Kon nie jou plasing plaas nie. Probeer asseblief weer.",
     whatsappMsg: (title) => `Hi, ek het jou "${title}" plasing op Ons Brandfort Bulletin gesien`,
   },
   en: {
@@ -94,18 +81,6 @@ const text = {
     privacyLink: "privacy policy",
     tabJob: "💼 Job Openings",
     tabSeeker: "🙋 Looking for Work",
-    postJob: "+ Post a Job",
-    postSeeker: "+ Post Availability",
-    cancel: "Cancel",
-    name: "Your name",
-    whatsapp: "WhatsApp number (e.g. 0821234567)",
-    jobTitlePlaceholder: "Job title (e.g. Cashier needed)",
-    seekerTitlePlaceholder: "What work are you looking for?",
-    jobDescPlaceholder: "Job details, hours, requirements...",
-    seekerDescPlaceholder: "Your experience, availability...",
-    posting: "Posting...",
-    postingJob: "Post Job",
-    postingSeeker: "Post Availability",
     by: "by",
     whatsappBtn: "💬 WhatsApp",
     markFilledJob: "Mark as Filled",
@@ -118,26 +93,16 @@ const text = {
     beFirst: "Be the first!",
     confirmJob: "Mark this job as filled?",
     confirmSeeker: "Mark yourself as no longer available?",
-    errorPost: "Couldn't post your listing. Please try again.",
     whatsappMsg: (title) => `Hi, I saw your "${title}" listing on Ons Brandfort Bulletin`,
   },
 };
 
 export default function Jobs() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [activeTab, setActiveTab] = useState("job");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [myListings, setMyListings] = useState([]);
-
-  const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Other");
 
   const t = text[lang];
 
@@ -156,44 +121,6 @@ export default function Jobs() {
       .order("created_at", { ascending: false });
     if (!error) setListings(data);
     setLoading(false);
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!name.trim() || !whatsapp.trim() || !title.trim() || !description.trim()) return;
-    setSubmitting(true);
-    setErrorMsg("");
-
-    const { data, error } = await supabase
-      .from("jobs")
-      .insert({
-        name: name.trim(),
-        whatsapp: whatsapp.trim(),
-        type: activeTab,
-        title: title.trim(),
-        description: description.trim(),
-        category,
-      })
-      .select()
-      .single();
-
-    setSubmitting(false);
-
-    if (!error && data) {
-      const updated = [...myListings, data.id];
-      localStorage.setItem("myJobListings", JSON.stringify(updated));
-      setMyListings(updated);
-      setShowForm(false);
-      setName("");
-      setWhatsapp("");
-      setTitle("");
-      setDescription("");
-      setCategory("Other");
-      fetchListings();
-    } else {
-      console.log("Error posting listing:", error);
-      setErrorMsg(t.errorPost);
-    }
   }
 
   async function markFilled(id) {
@@ -227,13 +154,8 @@ export default function Jobs() {
     .filter((l) => l.type === activeTab)
     .sort((a, b) => Number(!!a.is_filled) - Number(!!b.is_filled));
 
-  const inputClass =
-    "w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-orange-500";
-
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
-      <Nav lang={lang} />
-
       <header
         className="border-b border-orange-900/60 px-4 pt-6 pb-6"
         style={{
@@ -247,12 +169,6 @@ export default function Jobs() {
             </h1>
             <p className="text-sm text-neutral-300 mt-1">{t.sub}</p>
           </div>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-400 hover:text-orange-400 transition flex-shrink-0"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
       </header>
 
@@ -274,8 +190,6 @@ export default function Jobs() {
           <button
             onClick={() => {
               setActiveTab("job");
-              setShowForm(false);
-              setErrorMsg("");
             }}
             className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${
               activeTab === "job"
@@ -289,8 +203,6 @@ export default function Jobs() {
           <button
             onClick={() => {
               setActiveTab("seeker");
-              setShowForm(false);
-              setErrorMsg("");
             }}
             className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${
               activeTab === "seeker"
@@ -302,91 +214,6 @@ export default function Jobs() {
             {!loading && ` (${openCount("seeker")})`}
           </button>
         </div>
-
-        {/* Post button */}
-        <button
-          onClick={() => {
-            setShowForm(!showForm);
-            setErrorMsg("");
-          }}
-          className={`w-full transition rounded-xl py-3 font-semibold mb-5 ${
-            showForm
-              ? "bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
-              : "bg-orange-500 hover:bg-orange-600 text-white"
-          }`}
-        >
-          {showForm ? t.cancel : activeTab === "job" ? t.postJob : t.postSeeker}
-        </button>
-
-        {/* Form */}
-        {showForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-neutral-900 border border-orange-500/30 rounded-2xl p-5 mb-6 space-y-3"
-          >
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t.name}
-              maxLength={40}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder={t.whatsapp}
-              maxLength={20}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={activeTab === "job" ? t.jobTitlePlaceholder : t.seekerTitlePlaceholder}
-              maxLength={80}
-              required
-              className={inputClass}
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={activeTab === "job" ? t.jobDescPlaceholder : t.seekerDescPlaceholder}
-              rows={3}
-              maxLength={600}
-              required
-              className={inputClass}
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={inputClass}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c[lang]}
-                </option>
-              ))}
-            </select>
-
-            {errorMsg && (
-              <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-sm rounded-lg px-4 py-3">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-orange-500 hover:bg-orange-600 transition rounded-lg py-3 font-semibold disabled:opacity-50"
-            >
-              {submitting ? t.posting : activeTab === "job" ? t.postingJob : t.postingSeeker}
-            </button>
-          </form>
-        )}
 
         {loading && <SkeletonList Component={SkeletonPostCard} count={3} />}
 
@@ -459,7 +286,12 @@ export default function Jobs() {
             <p className="text-neutral-400 text-sm mb-1">
               {activeTab === "job" ? t.noJobs : t.noSeekers}
             </p>
-            <p className="text-neutral-500 text-sm">{t.beFirst}</p>
+            <Link
+              href={`/create/job?type=${activeTab}`}
+              className="text-orange-400 text-sm font-semibold underline"
+            >
+              {t.beFirst}
+            </Link>
           </div>
         )}
       </div>

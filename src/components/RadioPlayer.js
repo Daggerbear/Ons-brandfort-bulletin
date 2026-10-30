@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useQuestPing } from "@/components/QuestTracker";
 
 const PLAYER_URL = "https://sv2.famcast.co.za/AudioPlayer/veldbrand-radio?mount=";
 const STATION_URL = "https://veldbrandradio.co.za";
@@ -11,6 +12,10 @@ export default function RadioPlayer() {
   const [loaded, setLoaded] = useState(false);
   const [ready, setReady] = useState(false);
   const [slow, setSlow] = useState(false);
+
+  // Radio quest time counts while the player is loaded (audio keeps playing
+  // in the background, so this does not need the tab to be visible)
+  useQuestPing("radio", loaded && ready, false);
 
   useEffect(() => {
     try {

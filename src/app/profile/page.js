@@ -6,6 +6,10 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import Avatar from "@/components/Avatar";
 import XpCard from "@/components/XpCard";
+import MyPosts from "@/components/MyPosts";
+import HunterSignup from "@/components/HunterSignup";
+import { HUNTERS_ENABLED } from "@/lib/features";
+import { useLang } from "@/components/LangProvider";
 
 const GAMES = [
   { slug: "battleship", label: "Battleship" },
@@ -30,6 +34,7 @@ const text = {
     wait: "Wag...",
     signedInAs: "Aangemeld as",
     photoNote: "Jou foto kom van jou Google-rekening.",
+    editTitle: "WYSIG PROFIEL",
     nameLabel: "Vertoonnaam",
     nameHelp:
       "Gebruik jou eie naam. Moet asseblief nie 'n besigheidsnaam gebruik nie. Besigheidsrekeninge kom later.",
@@ -56,6 +61,7 @@ const text = {
     wait: "Please wait...",
     signedInAs: "Signed in as",
     photoNote: "Your photo comes from your Google account.",
+    editTitle: "EDIT PROFILE",
     nameLabel: "Display name",
     nameHelp:
       "Use your own name. Please don't use a business name. Business accounts are coming later.",
@@ -88,7 +94,7 @@ function firstNameFrom(user) {
 
 export default function ProfilePage() {
   const { user, loading, busy, signInWithGoogle, signOut } = useAuth();
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const t = text[lang];
 
   const [profile, setProfile] = useState(null); // saved row, or null if none yet
@@ -102,6 +108,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState(null); // { type: "ok" | "error", text }
 
   const userId = user?.id;
+  const isHunter = HUNTERS_ENABLED && !!user?.user_metadata?.hunter;
+  const gamerName = user?.user_metadata?.gamer_name || "";
   const gameLabel = GAMES.find((g) => g.slug === profile?.favourite_game)?.label;
 
   useEffect(() => {
@@ -185,13 +193,6 @@ export default function ProfilePage() {
           >
             {t.back}
           </Link>
-          <button
-            type="button"
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="rounded-full border border-neutral-500 bg-black/30 px-3 py-1 text-sm text-neutral-200 transition hover:border-orange-500 hover:text-orange-400"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
 
         {loading || (user && (status === "idle" || status === "loading")) ? (
@@ -236,6 +237,9 @@ export default function ProfilePage() {
                 <h1 className="truncate text-xl font-bold">
                   {profile?.display_name || t.title}
                 </h1>
+                {isHunter && gamerName && (
+                  <p className="truncate text-sm font-semibold text-cyan-300">🎯 {gamerName}</p>
+                )}
                 {gameLabel && (
                   <p className="truncate text-sm text-cyan-300">🎮 {gameLabel}</p>
                 )}
@@ -246,15 +250,26 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="mt-4">
-              <XpCard totalXp={totalXp} lang={lang} />
-            </div>
+            {HUNTERS_ENABLED &&
+              (isHunter ? (
+                <div className="mt-4">
+                  <XpCard totalXp={totalXp} lang={lang} />
+                </div>
+              ) : (
+                <HunterSignup lang={lang} defaultName={firstNameFrom(user)} />
+              ))}
 
             <p className="mt-3 text-center text-xs text-neutral-500">
               🔒 {t.private}
             </p>
 
+            <MyPosts userId={userId} lang={lang} />
+
             <form onSubmit={save} className="mt-5 space-y-4">
+              <p className="text-[11px] font-bold tracking-[0.25em] text-orange-400">
+                [ {t.editTitle} ]
+              </p>
+
               <div>
                 <label
                   htmlFor="display_name"

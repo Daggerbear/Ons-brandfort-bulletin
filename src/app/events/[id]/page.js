@@ -1,5 +1,6 @@
 // src/app/events/[id]/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -90,7 +91,7 @@ const text = {
 
 export default function EventDetail() {
   const { id } = useParams();
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -129,12 +130,6 @@ export default function EventDetail() {
       <Link href="/community" className="text-sm text-green-400 hover:text-green-300">
         {t.back}
       </Link>
-      <button
-        onClick={() => setLang(lang === "af" ? "en" : "af")}
-        className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-green-400 hover:text-green-400 transition"
-      >
-        {lang === "af" ? "English" : "Afrikaans"}
-      </button>
     </div>
   );
 

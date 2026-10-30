@@ -1,10 +1,16 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import { getStoredPlayer, loginPlayer } from "@/lib/playerAuth";
+import QuestTracker from "@/components/QuestTracker";
 
 export default function GamesLayout({ children }) {
   const [player, setPlayer] = useState(undefined);
   const [name, setName] = useState("");
+  const suggestedName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedName) setName((current) => current || suggestedName);
+  }, [suggestedName]);
   const [cell, setCell] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -73,5 +79,10 @@ export default function GamesLayout({ children }) {
     );
   }
 
-  return children;
+  return (
+    <>
+      <QuestTracker kind="cafe" needVisible />
+      {children}
+    </>
+  );
 }

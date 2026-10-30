@@ -1,5 +1,6 @@
 // src/app/vind/page.js
 "use client";
+import { useLang } from "@/components/LangProvider";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
@@ -19,7 +20,7 @@ const QUICK_TAGS = [
 ];
 
 export default function VindDiens() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [businesses, setBusinesses] = useState([]);
   const [knowledge, setKnowledge] = useState([]);
   const [input, setInput] = useState("");
@@ -111,14 +112,7 @@ export default function VindDiens() {
       <Nav lang={lang} />
 
       <header className="border-b border-neutral-800 px-6 py-5 text-center">
-        <div className="flex justify-end mb-3 max-w-xl mx-auto">
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-orange-500 hover:text-orange-400 transition"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
-        </div>
+        
         <h1 className="text-2xl font-bold">{t.title}</h1>
         <p className="text-neutral-400 mt-1 text-sm">{t.subtitle}</p>
       </header>

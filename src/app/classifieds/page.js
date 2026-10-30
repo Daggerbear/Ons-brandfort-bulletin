@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import Nav from "@/components/Nav";
+import { useLang } from "@/components/LangProvider";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
@@ -49,27 +49,6 @@ function timeAgo(dateStr, lang) {
   return lang === "af" ? "nou" : "now";
 }
 
-// Resize to max 1400px wide and save as a light JPEG.
-// Falls back to the original file if anything goes wrong or it wouldn't get smaller.
-async function compressPhoto(file, maxWidth = 1400, quality = 0.8) {
-  try {
-    if (!file.type.startsWith("image/")) return file;
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxWidth / bitmap.width);
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", quality)
-    );
-    if (!blob || blob.size >= file.size) return file;
-    return blob;
-  } catch {
-    return file;
-  }
-}
-
 const text = {
   af: {
     title: "Koop & Verkoop",
@@ -77,19 +56,7 @@ const text = {
     disclaimer: "Koop en verkoop plaaslik. Alle transaksies gebeur direk tussen jou en die koper/verkoper via WhatsApp — Bulletin is nie deel van enige transaksie nie.",
     privacyNote: "Deur te plaas, stem jy in tot ons",
     privacyLink: "privaatheidsbeleid",
-    postBtn: "+ Plaas 'n Item",
-    cancel: "Kanselleer",
-    name: "Jou naam",
-    whatsapp: "WhatsApp nommer (bv. 0821234567)",
-    itemTitle: "Wat verkoop jy?",
-    description: "Beskrywing...",
     priceOnRequest: "Prys op aanvraag",
-    price: "Prys (R)",
-    addPhoto: "Voeg 'n foto by (opsioneel)",
-    changePhoto: "Verander foto",
-    removePhoto: "Verwyder",
-    posting: "Plaas tans...",
-    postListing: "Plaas Item",
     by: "deur",
     whatsappBtn: "💬 WhatsApp",
     markSold: "Merk as Verkoop",
@@ -100,8 +67,6 @@ const text = {
     noListingsFilter: "Geen items in hierdie kategorie nie.",
     beFirst: "Wees die eerste een!",
     confirmSold: "Merk hierdie item as verkoop?",
-    errorPhoto: "Kon nie die foto oplaai nie. Probeer 'n ander foto, of verwyder dit en probeer weer.",
-    errorPost: "Kon nie jou item plaas nie. Probeer asseblief weer.",
     whatsappMsg: (title) => `Hi, ek het jou item "${title}" op Ons Brandfort Bulletin gesien`,
   },
   en: {
@@ -110,19 +75,7 @@ const text = {
     disclaimer: "Buy & sell locally. All deals happen directly between you and the buyer/seller via WhatsApp — Bulletin isn't involved in any transaction.",
     privacyNote: "By posting, you agree to our",
     privacyLink: "privacy policy",
-    postBtn: "+ Post a Listing",
-    cancel: "Cancel",
-    name: "Your name",
-    whatsapp: "WhatsApp number (e.g. 0821234567)",
-    itemTitle: "What are you selling?",
-    description: "Description...",
     priceOnRequest: "Price on request",
-    price: "Price (R)",
-    addPhoto: "Add a photo (optional)",
-    changePhoto: "Change photo",
-    removePhoto: "Remove",
-    posting: "Posting...",
-    postListing: "Post Listing",
     by: "by",
     whatsappBtn: "💬 WhatsApp",
     markSold: "Mark as Sold",
@@ -133,31 +86,16 @@ const text = {
     noListingsFilter: "No listings in this category.",
     beFirst: "Be the first!",
     confirmSold: "Mark this listing as sold?",
-    errorPhoto: "Couldn't upload the photo. Try a different photo, or remove it and try again.",
-    errorPost: "Couldn't post your listing. Please try again.",
     whatsappMsg: (title) => `Hi, I saw your listing "${title}" on Ons Brandfort Bulletin`,
   },
 };
 
 export default function Classifieds() {
-  const [lang, setLang] = useState("af");
+  const { lang } = useLang();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [myListings, setMyListings] = useState([]);
   const [filter, setFilter] = useState("all");
-
-  const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [priceOnRequest, setPriceOnRequest] = useState(false);
-  const [category, setCategory] = useState("Other");
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
 
   const t = text[lang];
 
@@ -176,90 +114,6 @@ export default function Classifieds() {
       .order("created_at", { ascending: false });
     if (!error) setListings(data);
     setLoading(false);
-  }
-
-  function handlePhotoChange(e) {
-    const picked = e.target.files[0];
-    if (!picked) return;
-    setImage(picked);
-    setPreview(URL.createObjectURL(picked));
-  }
-
-  function removePhoto() {
-    setImage(null);
-    setPreview(null);
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!name.trim() || !whatsapp.trim() || !title.trim() || !description.trim()) return;
-    setSubmitting(true);
-    setErrorMsg("");
-
-    let image_url = null;
-    if (image) {
-      const uploadFile = await compressPhoto(image);
-      const compressed = uploadFile !== image;
-      const fileExt = compressed ? "jpg" : image.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("classifieds")
-        .upload(
-          fileName,
-          uploadFile,
-          compressed ? { contentType: "image/jpeg" } : undefined
-        );
-
-      if (uploadError) {
-        console.log("Upload error:", uploadError);
-        setErrorMsg(t.errorPhoto);
-        setSubmitting(false);
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("classifieds")
-        .getPublicUrl(fileName);
-      image_url = publicUrlData.publicUrl;
-    }
-
-    const { data, error } = await supabase
-      .from("classifieds")
-      .insert({
-        name: name.trim(),
-        whatsapp: whatsapp.trim(),
-        title: title.trim(),
-        description: description.trim(),
-        price: priceOnRequest ? null : price ? parseFloat(price) : null,
-        price_on_request: priceOnRequest,
-        category,
-        image_url,
-      })
-      .select()
-      .single();
-
-    setSubmitting(false);
-
-    if (!error && data) {
-      const updated = [...myListings, data.id];
-      localStorage.setItem("myClassifieds", JSON.stringify(updated));
-      setMyListings(updated);
-      setShowForm(false);
-      setName("");
-      setWhatsapp("");
-      setTitle("");
-      setDescription("");
-      setPrice("");
-      setPriceOnRequest(false);
-      setCategory("Other");
-      setImage(null);
-      setPreview(null);
-      fetchListings();
-    } else {
-      console.log("Error posting listing:", error);
-      setErrorMsg(t.errorPost);
-    }
   }
 
   async function markSold(id) {
@@ -301,13 +155,8 @@ export default function Classifieds() {
     .filter((l) => filter === "all" || findCategory(l.category)?.value === filter)
     .sort((a, b) => Number(!!a.is_sold) - Number(!!b.is_sold));
 
-  const inputClass =
-    "w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 outline-none focus:border-green-500";
-
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
-      <Nav lang={lang} />
-
       <header
         className="border-b border-green-900/60 px-4 pt-6 pb-6"
         style={{
@@ -321,12 +170,6 @@ export default function Classifieds() {
             </h1>
             <p className="text-sm text-neutral-300 mt-1">{t.sub}</p>
           </div>
-          <button
-            onClick={() => setLang(lang === "af" ? "en" : "af")}
-            className="text-sm border border-neutral-700 rounded-full px-3 py-1 text-neutral-300 hover:border-green-400 hover:text-green-400 transition flex-shrink-0"
-          >
-            {lang === "af" ? "English" : "Afrikaans"}
-          </button>
         </div>
       </header>
 
@@ -342,140 +185,6 @@ export default function Classifieds() {
             .
           </p>
         </div>
-
-        {/* Post button */}
-        <button
-          onClick={() => {
-            setShowForm(!showForm);
-            setErrorMsg("");
-          }}
-          className={`w-full transition rounded-xl py-3 font-semibold mb-5 ${
-            showForm
-              ? "bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
-              : "bg-green-500 hover:bg-green-600 text-black"
-          }`}
-        >
-          {showForm ? t.cancel : t.postBtn}
-        </button>
-
-        {/* Form */}
-        {showForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-neutral-900 border border-green-500/30 rounded-2xl p-5 mb-6 space-y-3"
-          >
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t.name}
-              maxLength={40}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder={t.whatsapp}
-              maxLength={20}
-              required
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t.itemTitle}
-              maxLength={80}
-              required
-              className={inputClass}
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t.description}
-              rows={3}
-              maxLength={600}
-              required
-              className={inputClass}
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={inputClass}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.icon} {c[lang]}
-                </option>
-              ))}
-            </select>
-
-            <label className="flex items-center gap-2 text-sm text-neutral-400">
-              <input
-                type="checkbox"
-                checked={priceOnRequest}
-                onChange={(e) => setPriceOnRequest(e.target.checked)}
-              />
-              {t.priceOnRequest}
-            </label>
-
-            {!priceOnRequest && (
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder={t.price}
-                className={inputClass}
-              />
-            )}
-
-            <label className="flex items-center justify-center gap-2 bg-neutral-950 border border-neutral-700 hover:border-green-500 transition rounded-lg px-4 py-3 cursor-pointer">
-              📷 {image ? t.changePhoto : t.addPhoto}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-            </label>
-
-            {preview && (
-              <div className="relative inline-block">
-                <img
-                  src={preview}
-                  alt="Photo preview"
-                  className="w-32 h-32 object-cover rounded-lg border border-neutral-800"
-                />
-                <button
-                  type="button"
-                  onClick={removePhoto}
-                  aria-label={t.removePhoto}
-                  className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-neutral-800 border border-neutral-600 text-neutral-200 hover:text-red-400 flex items-center justify-center text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {errorMsg && (
-              <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-sm rounded-lg px-4 py-3">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-green-500 hover:bg-green-600 text-black transition rounded-lg py-3 font-semibold disabled:opacity-50"
-            >
-              {submitting ? t.posting : t.postListing}
-            </button>
-          </form>
-        )}
 
         {/* Category filters */}
         {!loading && filterCats.length > 1 && (
@@ -605,7 +314,9 @@ export default function Classifieds() {
               {listings.length === 0 ? t.noListings : t.noListingsFilter}
             </p>
             {listings.length === 0 && (
-              <p className="text-neutral-500 text-sm">{t.beFirst}</p>
+              <Link href="/create/sell" className="text-green-400 text-sm font-semibold underline">
+                {t.beFirst}
+              </Link>
             )}
           </div>
         )}

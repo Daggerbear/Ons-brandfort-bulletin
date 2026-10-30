@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSuggestedName } from "@/lib/useSuggestedName";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import GameSponsorBanner from "@/components/GameSponsorBanner";
@@ -15,6 +16,10 @@ export default function WhackAMole() {
   const [gameOver, setGameOver] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [playerName, setPlayerName] = useState("");
+  const suggestedPlayerName = useSuggestedName();
+  useEffect(() => {
+    if (suggestedPlayerName) setPlayerName((current) => current || suggestedPlayerName);
+  }, [suggestedPlayerName]);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [whacked, setWhacked] = useState(null);
 
