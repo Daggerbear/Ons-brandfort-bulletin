@@ -52,11 +52,11 @@ export const BUSINESS_FORMS = {
     seeHref: "/business",
     title: T("Plaas 'n opdatering", "Post an update"),
     intro: T(
-      "Spesiale, nuwe voorraad of nuus. Ons keur dit gou goed.",
+      "Spesiale aanbiedings, nuwe voorraad of nuus. Ons keur dit gou goed.",
       "Specials, new stock or news. We approve it quickly."
     ),
     rules: T(
-      "Net vir gelyste besighede. Maak seker jou besigheid is eers gelys en goedgekeur.",
+      "Net vir geregistreerde besighede. Maak seker jou besigheid is eers geregistreer en goedgekeur.",
       "For listed businesses only. Make sure your business is listed and approved first."
     ),
     fields: [
@@ -65,7 +65,7 @@ export const BUSINESS_FORMS = {
         kind: "business",
         required: true,
         label: T("Jou besigheid", "Your business"),
-        hint: T("Sien jy dit nie? Lys eers jou besigheid.", "Can't see it? List your business first."),
+        hint: T("Sien jy dit nie? Registreer eers jou besigheid.", "Can't see it? List your business first."),
       },
       { name: "category", kind: "chips", default: "Announcement", options: UPDATE_CATS, label: T("Wat soort opdatering?", "What kind of update?") },
       { name: "title", kind: "text", required: true, max: 80, label: T("Opskrif", "Headline"), placeholder: T("bv. Vrydag-spesiaal: 2 vir 1 pizzas", "e.g. Friday special: 2-for-1 pizzas") },
@@ -83,7 +83,7 @@ export const BUSINESS_FORMS = {
     ],
     validate: (v, lang) =>
       v.youtube?.trim() && !extractYoutubeId(v.youtube.trim())
-        ? T("Kon nie 'n geldige YouTube skakel herken nie.", "Couldn't recognize a valid YouTube link.")[lang]
+        ? T("Kon nie 'n geldige YouTube-skakel herken nie.", "Couldn't recognize a valid YouTube link.")[lang]
         : null,
     build: (v, { imageUrl }) => ({
       business_id: v.business_id,
@@ -104,14 +104,14 @@ export const BUSINESS_FORMS = {
     mine: null,
     live: false,
     seeHref: "/business",
-    title: T("Lys my besigheid", "List my business"),
+    title: T("Registreer my besigheid", "List my business"),
     intro: T(
       "Gratis. Die hele dorp kan jou vind. Ons keur dit gou goed.",
       "Free. The whole town can find you. We approve it quickly."
     ),
     rules: T("", ""),
     fields: [
-      { name: "name", kind: "text", required: true, max: 60, label: T("Besigheid naam", "Business name"), remember: null },
+      { name: "name", kind: "text", required: true, max: 60, label: T("Besigheidsnaam", "Business name"), remember: null },
       { name: "category", kind: "select", required: true, options: BUSINESS_CATS, label: T("Soort besigheid", "Type of business") },
       { name: "description", kind: "textarea", required: true, max: 600, label: T("Wat doen julle?", "What do you do?"), placeholder: T("Vertel mense kortliks van jou besigheid", "Tell people briefly about your business") },
       {
@@ -124,7 +124,7 @@ export const BUSINESS_FORMS = {
       },
       {
         ...contactField("contact"),
-        label: T("Kontak nommer", "Contact number"),
+        label: T("Kontaknommer", "Contact number"),
         hint: T("Hierdie nommer sal op jou bladsy wys.", "This number will show on your page."),
       },
       { name: "address", kind: "text", max: 120, label: T("Adres (opsioneel)", "Address (optional)") },

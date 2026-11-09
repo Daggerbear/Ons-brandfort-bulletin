@@ -79,10 +79,10 @@ const EVENT_FILLER = new Set([
 
 const EXTRA_T = {
   af: {
-    evMany: "Hier is die gebeurtenisse wat nou gelys is. Kyk na die datum op elke kaart:",
-    evOne: "Daar is 1 gebeurtenis gelys. Kyk na die datum op die kaart:",
-    evNone: "Daar is nou nie gebeurtenisse gelys nie. Weet jy van een? Lys dit gerus, dan sien almal dit.",
-    listEvent: "📅 Lys My Gebeurtenis",
+    evMany: "Hier is die gebeurtenisse wat nou geplaas is. Kyk na die datum op elke kaart:",
+    evOne: "Daar is 1 gebeurtenis geplaas. Kyk na die datum op die kaart:",
+    evNone: "Daar is nou nie gebeurtenisse geplaas nie. Weet jy van een? Plaas dit gerus, dan sien almal dit.",
+    listEvent: "📅 Plaas My Gebeurtenis",
     hoursSeen: "Kyk na die ure op elke kaart. Ek kan nie self sê wie op daardie tyd oop is nie.",
   },
   en: {

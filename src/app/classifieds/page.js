@@ -52,9 +52,9 @@ function timeAgo(dateStr, lang) {
 const text = {
   af: {
     title: "Koop & Verkoop",
-    sub: "Plaaslike classifieds vir Brandfort.",
+    sub: "Koop en verkoop plaaslik in Brandfort.",
     disclaimer: "Koop en verkoop plaaslik. Alle transaksies gebeur direk tussen jou en die koper/verkoper via WhatsApp — Bulletin is nie deel van enige transaksie nie.",
-    privacyNote: "Deur te plaas, stem jy in tot ons",
+    privacyNote: "Deur te plaas, aanvaar jy ons",
     privacyLink: "privaatheidsbeleid",
     priceOnRequest: "Prys op aanvraag",
     by: "deur",

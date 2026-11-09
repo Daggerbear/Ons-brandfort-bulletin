@@ -5,51 +5,60 @@ import Link from "next/link";
 const text = {
   af: {
     mission: "MISSIE",
-    xp: "XP",
-    min: "min",
-    done: "Klaar",
     open: "Sien al jou missies",
-    cafe: (n) => `Spandeer ${n} minute in Glitch Cafe`,
-    radio: (n) => `Luister ${n} minute na Veldbrand Radio`,
     promoTitle: "Word 'n Hunter 🎯",
     promoBody:
-      "Voltooi daaglikse missies, verdien XP en klim vlakke. Dis opsioneel en gratis.",
+      "Voltooi daaglikse missies, verdien Bulletin Bucks en klim vlakke. Dis opsioneel en gratis.",
     promoButton: "Begin",
     dismiss: "Nie nou nie",
   },
   en: {
     mission: "MISSION",
-    xp: "XP",
-    min: "min",
-    done: "Done",
     open: "See all your missions",
-    cafe: (n) => `Spend ${n} minutes in Glitch Cafe`,
-    radio: (n) => `Listen to Veldbrand Radio for ${n} minutes`,
     promoTitle: "Become a Hunter 🎯",
     promoBody:
-      "Complete daily missions, earn XP and level up. It's optional and free.",
+      "Complete daily missions, earn Bulletin Bucks and level up. It's optional and free.",
     promoButton: "Get started",
     dismiss: "Not now",
   },
 };
 
-const ICONS = { cafe: "🕹️", radio: "📻" };
+const CATEGORY_ICONS = {
+  checkin: "📍",
+  play: "🕹️",
+  listen: "📻",
+  explore: "🧭",
+  learn: "🧠",
+  social: "💬",
+  help: "🤝",
+  challenge: "🔥",
+  weekly: "⭐",
+};
 
-// One daily mission, shown inside the feed for people who are Hunters
+// One mission, shown inside the feed for people who are Hunters
 export function MissionCard({ quest, lang = "af" }) {
   const t = text[lang] || text.af;
-  const target = Math.max(1, Math.round(quest.o_target / 60));
-  const shown = quest.o_done
-    ? target
-    : Math.min(Math.floor(quest.o_seconds / 60), target);
+  const count = quest.o_unit === "count";
+  const target = count ? quest.o_target : Math.max(1, Math.round(quest.o_target / 60));
+  const current = count ? quest.o_seconds : Math.floor(quest.o_seconds / 60);
+  const shown = quest.o_done ? target : Math.min(current, target);
   const pct = quest.o_done
     ? 100
     : Math.min(100, Math.round((quest.o_seconds / quest.o_target) * 100));
-  const label = (t[quest.o_kind] || (() => quest.o_quest_id))(target);
+  const label =
+    (lang === "af" ? quest.o_title_af : quest.o_title_en) ||
+    quest.o_title_en ||
+    quest.o_quest_id;
+
+  const reward = [];
+  if (quest.o_xp > 0) reward.push(`${quest.o_xp} XP`);
+  if (quest.o_loot_amount > 0) {
+    reward.push(`${quest.o_loot_amount} BB`);
+  }
 
   return (
     <Link
-      href="/profile"
+      href="/profile/hunter"
       className="block rounded-2xl border border-cyan-400/40 bg-[#050b18] p-4 transition hover:border-cyan-300"
     >
       <div className="flex items-center justify-between">
@@ -57,11 +66,11 @@ export function MissionCard({ quest, lang = "af" }) {
           [ {t.mission} ]
         </span>
         <span className="text-xs font-semibold tabular-nums text-cyan-300">
-          +{quest.o_xp} {t.xp}
+          +{reward.join(" · ")}
         </span>
       </div>
       <p className="mt-2 text-sm font-semibold text-white">
-        {ICONS[quest.o_kind] || "⭐"} {label}
+        {CATEGORY_ICONS[quest.o_category] || "⭐"} {label}
       </p>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cyan-950">
         <div
@@ -71,7 +80,8 @@ export function MissionCard({ quest, lang = "af" }) {
       </div>
       <p className="mt-1.5 flex justify-between text-[10px] tabular-nums text-neutral-500">
         <span>
-          {shown} / {target} {t.min}
+          {shown} / {target}
+          {count ? "" : " min"}
         </span>
         <span>{t.open} ›</span>
       </p>
@@ -88,7 +98,7 @@ export function HunterPromoCard({ lang = "af", onDismiss }) {
       <p className="mt-1 text-xs leading-relaxed text-neutral-400">{t.promoBody}</p>
       <div className="mt-3 flex items-center gap-3">
         <Link
-          href="/profile"
+          href="/profile/hunter"
           className="rounded-full bg-cyan-400 px-4 py-1.5 text-xs font-bold text-black transition hover:bg-cyan-300"
         >
           {t.promoButton}

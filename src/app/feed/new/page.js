@@ -44,12 +44,12 @@ export default function NewPost() {
       namePlaceholder: "Jou naam",
       contentPlaceholder: "Wat wil jy sê?",
       choosePhoto: "Kies foto",
-      videoPlaceholder: "YouTube skakel (opsioneel)",
+      videoPlaceholder: "YouTube-skakel (opsioneel)",
       submit: "Plaas",
       submitting: "Stuur...",
       fillIn: "Vul asseblief alles in.",
       photoFail: "Foto oplaai het misluk.",
-      videoInvalid: "Kon nie 'n geldige YouTube skakel herken nie.",
+      videoInvalid: "Kon nie 'n geldige YouTube-skakel herken nie.",
       wrong: "Iets het verkeerd gegaan.",
       rulesTitle: "📋 Feed Reëls",
       rules: [
@@ -60,7 +60,7 @@ export default function NewPost() {
         "Plasings wat 3 rapporte kry word outomaties verberg en hersien.",
         "Ons behou die reg voor om enige plasing te verwyder.",
       ],
-      agree: "Deur te plaas, stem jy in tot ons",
+      agree: "Deur te plaas, aanvaar jy ons",
       terms: "Bepalings & Voorwaardes",
     },
     en: {

@@ -14,10 +14,10 @@ export default function MenuPage() {
         { icon: "🔎", label: "Vind 'n Diens", href: "/vind" },
         { icon: "🛒", label: "Koop & Verkoop", href: "/classifieds" },
         { icon: "💼", label: "Werk", href: "/jobs" },
-        { icon: "🚨", label: "Nood Kontakte", href: "/emergency" },
+        { icon: "🚨", label: "Noodkontakte", href: "/emergency" },
         { icon: "🕹️", label: "Glitch Cafe", href: "/games" },
-        { icon: "🏪", label: "Lys Jou Besigheid", href: "/list-your-business" },
-        { icon: "📅", label: "Lys Jou Gebeurtenis", href: "/list-your-event" },
+        { icon: "🏪", label: "Registreer Jou Besigheid", href: "/list-your-business" },
+        { icon: "📅", label: "Plaas Jou Gebeurtenis", href: "/list-your-event" },
       ],
       legal: [
         { label: "Ons Visie & Missie", href: "/mission" },

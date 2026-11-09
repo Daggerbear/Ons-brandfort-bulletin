@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useSuggestedName } from "@/lib/useSuggestedName";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { saveScore as saveScoreRow, currentPlayerName } from "@/lib/scores";
 import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 const SIZE = 4;
@@ -100,32 +99,18 @@ export default function MergeRush() {
   const [playing, setPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [playerName, setPlayerName] = useState("");
-  const suggestedPlayerName = useSuggestedName();
   useEffect(() => {
-    if (suggestedPlayerName) setPlayerName((current) => current || suggestedPlayerName);
-  }, [suggestedPlayerName]);
+    setPlayerName(currentPlayerName());
+  }, []);
   const [scoreSaved, setScoreSaved] = useState(false);
+  const [scoreError, setScoreError] = useState(false);
 
   const gridRef = useRef(grid);
   const scoreRef = useRef(0);
   const playingRef = useRef(false);
   const touchStart = useRef(null);
   const wonRef = useRef(false);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  async function fetchLeaderboard() {
-    const { data } = await supabase
-      .from("merge_rush_scores")
-      .select("*")
-      .order("score", { ascending: false })
-      .limit(10);
-    setLeaderboard(data || []);
-  }
 
   function startGame() {
     let g = addRandomTile(emptyGrid());
@@ -138,7 +123,7 @@ export default function MergeRush() {
     setGameOver(false);
     setWon(false);
     setScoreSaved(false);
-    setPlayerName("");
+    setPlayerName(currentPlayerName());
     setPlaying(true);
     playingRef.current = true;
   }
@@ -171,13 +156,14 @@ export default function MergeRush() {
   }
 
   async function saveScore() {
-    if (!playerName.trim() || scoreSaved) return;
-    await supabase.from("merge_rush_scores").insert({
-      player_name: playerName.trim(),
-      score,
-    });
+    if (!playerName || scoreSaved) return;
+    const { error } = await saveScoreRow("merge_rush_scores", score);
+    if (error) {
+      setScoreError(true);
+      return;
+    }
+    setScoreError(false);
     setScoreSaved(true);
-    fetchLeaderboard();
   }
 
   useEffect(() => {
@@ -249,14 +235,10 @@ export default function MergeRush() {
             {won ? "🏆" : "💀"} Game Over — {score} pts
           </p>
           {!scoreSaved ? (
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Your name"
-                className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white"
-              />
+            <div className="flex items-center gap-2 mb-3">
+              <p className="flex-1 text-left text-sm text-neutral-300">
+                Saving as <span className="text-orange-400 font-semibold">{playerName}</span>
+              </p>
               <button
                 onClick={saveScore}
                 className="bg-purple-600 hover:bg-purple-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2"
@@ -265,7 +247,14 @@ export default function MergeRush() {
               </button>
             </div>
           ) : (
-            <p className="text-green-400 text-sm mb-3">✓ Score saved!</p>
+            <p className="text-green-400 text-sm mb-3">✓ Score saved!{" "}
+              <Link href="/games/leaderboard" className="underline text-cyan-400">
+                See the Glitch Cafe leaderboard
+              </Link>
+            </p>
+          )}
+          {scoreError && (
+            <p className="text-red-400 text-sm mb-3">{"Couldn't save your score. Try again."}</p>
           )}
           <button
             onClick={startGame}
@@ -325,26 +314,6 @@ export default function MergeRush() {
         </div>
       )}
 
-      {leaderboard.length > 0 && (
-        <div className="mt-8 w-full max-w-xs">
-          <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-wide mb-2 text-center">
-            🏆 Top Scores
-          </h2>
-          <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
-            {leaderboard.map((entry, i) => (
-              <div
-                key={entry.id}
-                className="flex justify-between px-3 py-2 text-sm border-b border-neutral-800 last:border-0"
-              >
-                <span className="text-neutral-300">
-                  {i + 1}. {entry.player_name}
-                </span>
-                <span className="text-cyan-400 font-semibold">{entry.score}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <GameSponsorBanner gameSlug="merge-rush" />
 

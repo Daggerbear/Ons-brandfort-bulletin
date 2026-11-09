@@ -1,8 +1,17 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Brandfort Grid palette */
+  --grid-bg: #02060f;
+  --grid-line: #0b3a5c;
+  --grid-cyan: #22d3ee;
+  --grid-blue: #3b82f6;
+  --grid-red: #ef4444;
+  --grid-gold: #fbbf24;
 }
 
 @theme inline {
@@ -20,21 +29,23 @@
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(180deg, #050505 0%, #0a0a0a 100%);
 }
 
 .bg-carbon {
   background-color: #0a0a0a;
   background-image:
-    linear-gradient(45deg, #151515 25%, transparent 25%),
-    linear-gradient(-45deg, #151515 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #151515 75%),
-    linear-gradient(-45deg, transparent 75%, #151515 75%);
-  background-size: 8px 8px;
-  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.05) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(20, 20, 20, 0.5) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(20, 20, 20, 0.5) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(20, 20, 20, 0.5) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(20, 20, 20, 0.5) 75%);
+  background-size: 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
+  background-position: 0 0, 0 0, 0 4px, 4px -4px, -4px 0px;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -57,4 +68,103 @@ body {
 }
 .animate-marquee {
   animation: marquee 28s linear infinite;
+}
+
+/* ===== Brandfort Grid (Tron map) ===== */
+
+.grid-screen {
+  background-color: var(--grid-bg);
+  background-image:
+    radial-gradient(circle at 50% 40%, rgba(34, 211, 238, 0.08), transparent 65%);
+  color: #e0f2fe;
+  min-height: 100dvh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Neon glow helpers (SVG and HTML) */
+.grid-glow-cyan {
+  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.9))
+          drop-shadow(0 0 10px rgba(34, 211, 238, 0.45));
+}
+.grid-glow-red {
+  filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.9))
+          drop-shadow(0 0 10px rgba(239, 68, 68, 0.45));
+}
+.grid-glow-gold {
+  filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.9));
+}
+
+/* HUD panels (top bar, quest list, bottom nav) */
+.grid-panel {
+  background: rgba(2, 10, 24, 0.82);
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  border-radius: 14px;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.25), inset 0 0 14px rgba(34, 211, 238, 0.06);
+  backdrop-filter: blur(6px);
+}
+.grid-panel-red {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.3), inset 0 0 14px rgba(239, 68, 68, 0.08);
+}
+
+/* Wireframe that "marches" while a structure is under construction */
+@keyframes grid-march {
+  to { stroke-dashoffset: -24; }
+}
+.grid-building {
+  stroke-dasharray: 8 4;
+  animation: grid-march 1.2s linear infinite;
+}
+
+/* A scan line sweeping a building as it loads */
+@keyframes grid-scan {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-100%); }
+}
+.grid-scan {
+  animation: grid-scan 2.4s ease-in-out infinite;
+}
+
+/* One-off pulse when a structure completes */
+@keyframes grid-complete {
+  0%   { opacity: 0.2; filter: brightness(2.4); }
+  60%  { opacity: 1; filter: brightness(1.6); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+.grid-complete {
+  animation: grid-complete 1.4s ease-out 1;
+}
+
+/* Soft idle pulse for beacons, towers, the player marker */
+@keyframes grid-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.grid-pulse {
+  animation: grid-pulse 2.2s ease-in-out infinite;
+}
+
+/* --- HIDE THE OLD SIDE TAB ON MOBILE --- */
+/* Stops the old radio side tab hanging off the screen while the audio keeps playing.
+   Anything with the grid-hud class is exempt, so the game HUD is never hidden. */
+@media (max-width: 768px) {
+  div[style*="position: fixed"][style*="left: 0"]:not(.grid-hud),
+  .radio-player-container,
+  #radio-tab {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid-building,
+  .grid-scan,
+  .grid-pulse,
+  .grid-complete,
+  .animate-kenburns,
+  .animate-marquee {
+    animation: none;
+  }
 }

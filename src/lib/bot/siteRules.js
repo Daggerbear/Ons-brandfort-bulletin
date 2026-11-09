@@ -7,7 +7,7 @@ export const SITE = [
     words: ["list my event", "add my event", "add an event", "post an event", "lys my gebeurtenis", "lys n gebeurtenis",
             "gebeurtenis lys", "gebeurtenis plaas", "plaas n gebeurtenis", "my event", "my funksie"],
     href: "/list-your-event",
-    af: { text: "Het jy 'n gebeurtenis? Lys dit hier, dan sien almal dit.", label: "📅 Lys My Gebeurtenis" },
+    af: { text: "Het jy 'n gebeurtenis? Plaas dit hier, dan sien almal dit.", label: "📅 Plaas My Gebeurtenis" },
     en: { text: "Got an event? List it here and everyone can see it.", label: "📅 List My Event" },
   },
   {
@@ -17,7 +17,7 @@ export const SITE = [
             "adverteer my besigheid", "my besigheid op die bulletin", "advertensie plaas", "besigheid advertensie",
             "advertensie vir my besigheid", "my besigheid adverteer", "adverteer besigheid"],
     href: "/list-your-business",
-    af: { text: "Wil jy jou besigheid op die Bulletin hê? Lys dit hier — dis gratis.", label: "🏪 Lys My Besigheid" },
+    af: { text: "Wil jy jou besigheid op die Bulletin hê? Registreer dit hier — dis gratis.", label: "🏪 Registreer My Besigheid" },
     en: { text: "Want your business on the Bulletin? List it here — it's free.", label: "🏪 List My Business" },
   },
   {
@@ -49,7 +49,7 @@ export const SITE = [
     words: ["emergency", "police", "ambulance", "fire department", "hospital", "urgent", "help me now",
             "nood", "noodgeval", "noodnommer", "noodnommers", "polisie", "brandweer", "ambulans", "hospitaal", "dringend"],
     href: "/emergency",
-    af: { text: "Dis dringend? Hier is die belangrike nommers. As dit lewensgevaarlik is, bel dadelik die nooddienste.", label: "🚨 Nood Kontakte" },
+    af: { text: "Dis dringend? Hier is die belangrike nommers. As dit lewensgevaarlik is, bel dadelik die nooddienste.", label: "🚨 Noodkontakte" },
     en: { text: "Urgent? Here are the important numbers. If it's life-threatening, call the emergency services right away.", label: "🚨 Emergency Contacts" },
   },
   {
@@ -81,7 +81,7 @@ export const SITE = [
     id: "post-update",
     words: ["post an update", "submit an update", "post a special", "plaas n opdatering", "plaas n spesiaal", "opdatering plaas"],
     href: "/business-updates/submit",
-    af: { text: "Wil jy 'n opdatering of spesiaal plaas? Hier is die vorm.", label: "📢 Plaas Opdatering" },
+    af: { text: "Wil jy 'n opdatering of spesiale aanbieding plaas? Hier is die vorm.", label: "📢 Plaas Opdatering" },
     en: { text: "Want to post an update or special? Here's the form.", label: "📢 Post an Update" },
   },
   {
@@ -120,9 +120,9 @@ export const SITE = [
     id: "privacy",
     words: ["privacy", "terms", "terms and conditions", "my data", "privaatheid", "terme", "voorwaardes", "my data"],
     href: "/privacy",
-    af: { text: "Ons privaatheidsbeleid en terme is hier.", label: "🔒 Privaatheid" },
+    af: { text: "Ons privaatheidsbeleid en bepalings is hier.", label: "🔒 Privaatheid" },
     en: { text: "Our privacy policy and terms are here.", label: "🔒 Privacy" },
-    extra: { href: "/terms", af: "📄 Terme", en: "📄 Terms" },
+    extra: { href: "/terms", af: "📄 Bepalings", en: "📄 Terms" },
   },
   {
     id: "directory",

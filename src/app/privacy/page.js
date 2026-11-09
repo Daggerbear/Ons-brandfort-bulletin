@@ -9,7 +9,7 @@ export default function Privacy() {
   const text = {
     af: {
       title: "Privaatheidsbeleid",
-      updated: "Laas opgedateer: Oktober 2026",
+      updated: "Laas opgedateer: November 2026",
       sections: [
         {
           h: "1. Wie Ons Is",
@@ -25,7 +25,7 @@ export default function Privacy() {
             "Wanneer jy die webwerf gebruik, kan ons die volgende versamel:",
             "• Jou naam (wanneer jy 'n plasing, kommentaar, besigheidslysing, gebeurtenis, koop & verkoop item, of werksadvertensie indien)",
             "• Kontakbesonderhede soos foonnommer of e-pos (vir besigheidslysings)",
-            "• Jou WhatsApp nommer (vir Koop & Verkoop en Werk plasings — sien afdeling 5)",
+            "• Jou WhatsApp-nommer (vir Koop & Verkoop en Werk plasings — sien afdeling 5)",
             "• Foto's wat jy oplaai en die inhoud van jou plasings en kommentare",
             "As jy met Google inteken, versamel ons ook:",
             "• Jou Google-naam, e-posadres en profielfoto. Ons sien nooit jou Google-wagwoord nie — Google hanteer die aanmelding.",
@@ -52,6 +52,7 @@ export default function Privacy() {
             "Plasings verdwyn na 30 dae uit die openbare feed (afhangende van kategorie), maar bly in ons databasis vir rekord- en ontwikkelingsdoeleindes, tensy jy versoek dat dit verwyder word.",
             "Koop & Verkoop items en Werk plasings verval nie outomaties nie — hulle bly sigbaar totdat die plasing as 'verkoop', 'gevul', of 'onbeskikbaar' gemerk word, of deur 'n administrateur verwyder word.",
             "Rekeninginligting bly totdat jy vra dat jou rekening verwyder word.",
+            "Jy kan jou eie plasings en advertensies enige tyd op jou profielbladsy wysig of uitvee. Uitgevee plasings word uit ons databasis verwyder; rugsteun-kopieë kan vir 'n beperkte tyd bly bestaan.",
           ],
         },
         {
@@ -67,6 +68,7 @@ export default function Privacy() {
           p: [
             "• Ons hou eenvoudige gebruiksstatistiek by (bladsyskoue, besigheidsbesoeke en soekterme) om die webwerf te verbeter en aan besighede te wys hoeveel mense hulle sien. Ons gebruik ook Vercel Analytics.",
             "• Wanneer jy inteken, berg jou blaaier 'n sessiesleutel sodat jy ingeteken bly totdat jy uitteken.",
+            "• Sommige speletjies (soos Idle Empire, Hue Hoard en Merge & Collect) stoor jou vordering op jou eie toestel in die blaaier se berging. Dit word nie na ons gestuur nie.",
             "• Boodskappe wat jy aan Lientjie tik, kan gestoor en deur ons hersien word om haar beter te maak. Moet nie persoonlike besonderhede soos ID-nommers of bankbesonderhede in haar gesels tik nie.",
           ],
         },
@@ -93,13 +95,22 @@ export default function Privacy() {
           ],
         },
         {
-          h: "10. Veranderinge aan Hierdie Beleid",
+          h: "10. Hunter-modus en Global Brandfort",
+          p: [
+            "As jy 'n Hunter word, stoor ons jou unieke speelnaam, jou missievordering, XP, en jou bydraes tot Global Brandfort (hoeveel energie en materiaal jy bygedra het).",
+            "Jou speelnaam en jou totale bydrae kan openbaar op die dorp se ranglys gewys word. Jou Google-naam, e-posadres, foto en profiel bly privaat.",
+            "Hierdie inligting word gebruik om die speletjie te laat werk, kullery te keer en ranglyste te wys. Ons verkoop dit nie.",
+            "Jy kan vra dat jou Hunter-rekord (speelnaam, XP en bydraes) verwyder word. Bydraes wat reeds by die dorp gevoeg is, kan as anonieme totale bly, sodat die dorp se vordering nie verander nie.",
+          ],
+        },
+        {
+          h: "11. Veranderinge aan Hierdie Beleid",
           p: [
             "Ons sal hierdie beleid opdateer wanneer nuwe funksies bykom (soos openbare profiele, besigheidsrekeninge of boodskappe). Die datum bo-aan wys wanneer dit laas verander is.",
           ],
         },
         {
-          h: "11. Kontak Ons",
+          h: "12. Kontak Ons",
           p: [
             "Vir enige vrae oor jou privaatheid of hierdie beleid, kontak Jaco du Plessis:",
             "WhatsApp: 060 366 1384",
@@ -110,7 +121,7 @@ export default function Privacy() {
     },
     en: {
       title: "Privacy Policy",
-      updated: "Last updated: October 2026",
+      updated: "Last updated: November 2026",
       sections: [
         {
           h: "1. Who We Are",
@@ -153,6 +164,7 @@ export default function Privacy() {
             "Posts disappear from the public feed after 30 days (depending on category), but remain in our database for record-keeping and development purposes, unless you request removal.",
             "Buy & Sell items and Jobs listings do not automatically expire — they remain visible until marked 'sold', 'filled', or 'unavailable', or removed by an administrator.",
             "Account information is kept until you ask for your account to be deleted.",
+            "You can edit or delete your own posts and listings at any time on your profile page. Deleted posts are removed from our database; backup copies may remain for a limited time.",
           ],
         },
         {
@@ -168,6 +180,7 @@ export default function Privacy() {
           p: [
             "• We keep simple usage statistics (page views, business views and search terms) to improve the website and show businesses how many people see them. We also use Vercel Analytics.",
             "• When you sign in, your browser stores a session key so you stay signed in until you sign out.",
+            "• Some games (such as Idle Empire, Hue Hoard and Merge & Collect) save your progress on your own device in browser storage. This is not sent to us.",
             "• Messages you type to Lientjie may be stored and reviewed by us to make her better. Please don't type personal details such as ID numbers or bank details into her chat.",
           ],
         },
@@ -194,13 +207,22 @@ export default function Privacy() {
           ],
         },
         {
-          h: "10. Changes to This Policy",
+          h: "10. Hunter Mode and Global Brandfort",
+          p: [
+            "If you become a Hunter, we store your unique gamer name, your mission progress, XP, and your contributions to Global Brandfort (how much energy and materials you have contributed).",
+            "Your gamer name and your total contribution may be shown publicly on the town leaderboard. Your Google name, email address, photo and profile stay private.",
+            "This information is used to make the game work, prevent cheating and show leaderboards. We do not sell it.",
+            "You can ask for your Hunter record (gamer name, XP and contributions) to be deleted. Contributions already added to the town may remain as anonymous totals so the town's progress does not change.",
+          ],
+        },
+        {
+          h: "11. Changes to This Policy",
           p: [
             "We will update this policy when new features are added (such as public profiles, business accounts or messaging). The date at the top shows when it was last changed.",
           ],
         },
         {
-          h: "11. Contact Us",
+          h: "12. Contact Us",
           p: [
             "For any questions about your privacy or this policy, contact Jaco du Plessis:",
             "WhatsApp: 060 366 1384",

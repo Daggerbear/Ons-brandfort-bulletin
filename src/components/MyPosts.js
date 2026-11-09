@@ -19,7 +19,7 @@ const SOURCES = [
       { name: "price", type: "price" },
       { name: "description", type: "textarea", max: 600 },
     ],
-    status: { col: "is_sold", af: "Gemerk as verkoop", en: "Mark as sold", doneAf: "Verkoop", doneEn: "Sold" },
+    status: { col: "is_sold", af: "Merk as verkoop", en: "Mark as sold", doneAf: "Verkoop", doneEn: "Sold" },
   },
   {
     table: "housing", cols: "id, title, description, price, price_on_request, is_taken, created_at, is_hidden", icon: "🏠", af: "Behuising", en: "Housing",

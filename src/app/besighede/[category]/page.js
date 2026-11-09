@@ -30,7 +30,7 @@ export default function CategoryBusinesses() {
       clear: "Maak skoon",
       notFound: "Hierdie kategorie bestaan nie.",
       beFirst: "Wees die eerste in hierdie kategorie!",
-      listCta: "Lys My Besigheid",
+      listCta: "Registreer My Besigheid",
     },
     en: {
       back: "← All Categories",

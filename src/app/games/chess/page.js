@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getStoredPlayer, clearStoredPlayer } from "@/lib/playerAuth";
+import { getStoredPlayer } from "@/lib/playerAuth";
 import { trackOnlinePlayers } from "@/lib/presence";
 import {
   findAndClaimWaitingOpponent,
@@ -33,11 +33,13 @@ export default function ChessHome() {
   const [showHelp, setShowHelp] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
   const unsubRef = useRef(null);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     setPlayer(getStoredPlayer());
     return () => {
       if (unsubRef.current) unsubRef.current();
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
@@ -45,11 +47,6 @@ export default function ChessHome() {
     const unsubscribe = trackOnlinePlayers("chess", setOnlineCount);
     return unsubscribe;
   }, []);
-
-  function switchPlayer() {
-    clearStoredPlayer();
-    window.location.href = "/games";
-  }
 
   async function handleCreate() {
     setLoading(true);
@@ -96,6 +93,15 @@ export default function ChessHome() {
     if (fetchError || !data) {
       setLoading(false);
       setError("Room not found.");
+      return;
+    }
+
+    // Old rooms expire: waiting rooms after 30 minutes, started games after 24 hours
+    const ageMs = data.created_at ? Date.now() - new Date(data.created_at).getTime() : 0;
+    const maxAge = data.player2_name ? 24 * 60 * 60 * 1000 : 30 * 60 * 1000;
+    if (ageMs > maxAge) {
+      setLoading(false);
+      setError("That room has expired. Start a new one.");
       return;
     }
 
@@ -170,11 +176,22 @@ export default function ChessHome() {
     setQueueId(entry.id);
 
     unsubRef.current = subscribeToQueueEntry(entry.id, (row) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
       router.push(`/games/chess/${row.room_code}?as=${row.as_role}`);
     });
+
+    // Nobody turned up: stop searching instead of waiting forever
+    timerRef.current = setTimeout(async () => {
+      if (unsubRef.current) unsubRef.current();
+      await cancelQueueEntry(entry.id);
+      setSearching(false);
+      setQueueId(null);
+      setError("No opponents online right now. Try again, or invite a friend with a room code.");
+    }, 90000);
   }
 
   async function handleCancelSearch() {
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (unsubRef.current) unsubRef.current();
     if (queueId) await cancelQueueEntry(queueId);
     setSearching(false);
@@ -188,10 +205,7 @@ export default function ChessHome() {
       <div className="w-full max-w-sm">
         <h1 className="text-3xl font-bold text-center mb-2">♟️ Chess</h1>
         <p className="text-neutral-500 text-center text-sm mb-4">
-          Playing as <span className="text-orange-400">{player.name}</span> ·{" "}
-          <button onClick={switchPlayer} className="underline hover:text-white">
-            Not you?
-          </button>
+          Playing as <span className="text-orange-400">{player.name}</span>
         </p>
 
         <button

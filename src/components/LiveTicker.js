@@ -24,7 +24,7 @@ export default function LiveTicker({ lang = "af" }) {
       ]);
 
       const postItems = (postsRes.data || []).map((p) => ({
-        text: lang === "af" ? `${p.name} het geplaas in Feed` : `${p.name} posted in Feed`,
+        text: lang === "af" ? `${p.name} het iets in die Feed geplaas` : `${p.name} posted in Feed`,
         created_at: p.created_at,
       }));
       const updateItems = (updatesRes.data || []).map((u) => ({

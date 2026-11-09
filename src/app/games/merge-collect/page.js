@@ -53,7 +53,7 @@ const TEXT = {
   },
   af: {
     title: "Merge & Collect", sub: "Voeg saam. Ontdek. Voltooi die boek.",
-    tabs: ["Bord", "Boek", "Opgraderings"], spawn: "Skep", energy: "Energie",
+    tabs: ["Bord", "Boek", "Opgraderings"], spawn: "Nuwe item", energy: "Energie",
     full: "Bord is vol! Voeg saam of verkoop iets.", noEnergy: "Geen energie. Wag of gradeer op.",
     sell: "Verkoop", tip: "Tik 'n item, dan 'n ooreenstemmende een om saam te voeg, of 'n leë blok om te skuif.",
     discovered: "Ontdek", rare: "SELDSAAM", complete: "Ketting voltooi!", newItem: "Nuwe ontdekking!",

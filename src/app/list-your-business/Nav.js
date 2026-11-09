@@ -1,6 +1,6 @@
 export default function Nav({ lang }) {
   const text = {
-    af: { home: "Tuisblad", business: "Lys Besigheid", event: "Lys Gebeurtenis" },
+    af: { home: "Tuisblad", business: "Registreer Besigheid", event: "Plaas Gebeurtenis" },
     en: { home: "Home", business: "List Business", event: "List Event" },
   };
   const t = text[lang] || text.af;

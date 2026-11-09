@@ -71,16 +71,16 @@ export default function ListBusiness() {
 
   const text = {
     af: {
-      heading: "Lys Jou Besigheid",
+      heading: "Registreer Jou Besigheid",
       sub: "Gratis, altyd. Vul die vorm in en ons keur dit gou goed.",
-      name: "Besigheid Naam",
+      name: "Besigheidsnaam",
       category: "Kategorie",
       description: "Beskrywing",
       services: "Wat doen jy?",
       servicesHint: "Opsioneel",
       servicesPlaceholder: "Bv. bande pas, enjin herstel, sleepdiens",
       servicesHelp: "Skei met kommas. Dit help mense om jou te vind wanneer hulle soek.",
-      contact: "Kontak Nommer",
+      contact: "Kontaknommer",
       address: "Adres",
       addressHint: "Opsioneel",
       hours: "Ure",
@@ -93,7 +93,7 @@ export default function ListBusiness() {
       thanksSub: "Ons keur dit gou goed en dan verskyn dit op die Bulletin.",
       back: "Terug na Tuisblad",
       viewAll: "Kyk na Besighede",
-      agree: "Deur in te dien, stem jy in tot ons",
+      agree: "Deur in te dien, aanvaar jy ons",
       terms: "Bepalings & Voorwaardes",
       errorLogo: "Kon nie die logo oplaai nie. Probeer 'n ander prent, of los dit uit en probeer weer.",
       errorGeneric: "Iets het skeefgeloop. Probeer asseblief weer.",

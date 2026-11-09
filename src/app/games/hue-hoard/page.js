@@ -48,7 +48,7 @@ const UPGRADES = [
 
 const HUES = {
   en: ["Red", "Orange", "Amber", "Lime", "Green", "Mint", "Cyan", "Azure", "Blue", "Violet", "Magenta", "Rose"],
-  af: ["Rooi", "Oranje", "Amber", "Lemmetjie", "Groen", "Kruisement", "Siaan", "Asuur", "Blou", "Violet", "Magenta", "Roos"],
+  af: ["Rooi", "Oranje", "Amber", "Lemmetjiegroen", "Groen", "Mintgroen", "Siaan", "Asuur", "Blou", "Violet", "Magenta", "Roos"],
 };
 const TONES = {
   en: ["Pale", "Light", "", "Deep", "Dark"],
@@ -86,11 +86,11 @@ const TEXT = {
   af: {
     title: "Hue Hoard", sub: "Meng. Ontdek. Versamel elke skakering.",
     drops: "Druppels", perSec: "/sek", tabs: ["Meng", "Galery", "Opgraderings"],
-    bowl: "Jou bak", empty: "Tik 'n pigment om te begin meng",
+    bowl: "Jou mengbak", empty: "Tik 'n pigment om te begin meng",
     mix: "Meng!", clear: "Maak leeg", finish: "Afwerking", isNew: "NUUT", known: "Bekend",
     found: "Ontdek", fresh: "Nuwe skakering ontdek!", again: "Reeds in jou galery",
     bonus: "Versamelingsbonus", welcome: "Welkom terug!", away: "Jou galery het verdien",
-    take: "Neem", back: "← Terug na Glitch Cafe", maxed: "MAKS", lvl: "Vl",
+    take: "Ontvang", back: "← Terug na Glitch Cafe", maxed: "MAKS", lvl: "Vl",
     up: {
       bowl: ["Groter Bak", "Hou meer dele vir fyner mengsels"],
       white: ["Wit Pigment", "Ontsluit bleek en ligte tinte"],

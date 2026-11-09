@@ -21,7 +21,7 @@ export default function Mission() {
       values: [
         {
           title: "Altyd Gratis vir die Gemeenskap",
-          desc: "Die kern van die Bulletin — besighede lys, gemeenskap feed, nood kontakte, en jou persoonlike rekening — bly vir altyd gratis vir elke inwoner van Brandfort.",
+          desc: "Die kern van die Bulletin — besigheidslyste, die gemeenskapsfeed, noodkontakte, en jou persoonlike rekening — bly vir altyd gratis vir elke inwoner van Brandfort.",
         },
         {
           title: "Gebou Deur Brandfort, Vir Brandfort",

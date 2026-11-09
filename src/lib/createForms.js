@@ -72,11 +72,11 @@ const whatsappField = {
   kind: "tel",
   required: true,
   max: 20,
-  label: T("Jou WhatsApp nommer", "Your WhatsApp number"),
+  label: T("Jou WhatsApp-nommer", "Your WhatsApp number"),
   placeholder: T("bv. 0821234567", "e.g. 0821234567"),
   hint: T(
-    "Mense kontak jou hier. Ons onthou dit net op hierdie foon.",
-    "People contact you here. We only remember it on this phone."
+    "Mense kontak jou hier. Jy kan dit eenmalig in jou profiel stoor.",
+    "People contact you here. You can save it once in your profile."
   ),
 };
 
@@ -105,7 +105,7 @@ export const FORMS = {
     ],
     validate: (v, lang) =>
       v.youtube?.trim() && !extractYoutubeId(v.youtube.trim())
-        ? T("Kon nie 'n geldige YouTube skakel herken nie.", "Couldn't recognize a valid YouTube link.")[lang]
+        ? T("Kon nie 'n geldige YouTube-skakel herken nie.", "Couldn't recognize a valid YouTube link.")[lang]
         : null,
     build: (v, { imageUrl }) => ({
       name: v.name.trim(),
@@ -248,7 +248,7 @@ export const FORMS = {
     mine: null,
     live: false,
     seeHref: "/",
-    title: T("Vertel die dorp", "Tell the town"),
+    title: T("Laat die dorp weet", "Tell the town"),
     intro: T("Gratis. Ons keur dit gou goed en dan sien almal dit.", "Free. We approve it quickly and then everyone sees it."),
     rules: T("", ""),
     fields: [

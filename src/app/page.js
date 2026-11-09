@@ -15,6 +15,7 @@ import { ListingCard, AdCard, EventTile } from "@/components/FeedCards";
 import { SkeletonPostCard } from "@/components/Skeleton";
 import { MissionCard, HunterPromoCard } from "@/components/HunterCards";
 import { HUNTERS_ENABLED } from "@/lib/features";
+import { useHunter } from "@/lib/useHunter";
 
 const PAGE_SIZE = 20;
 const AD_EVERY = 10; // a sponsored card after every 10th main post
@@ -48,7 +49,7 @@ const text = {
     forSale: "Te koop",
     hiring: "Vakature",
     seeking: "Soek werk",
-    priceOnRequest: "Prys op navraag",
+    priceOnRequest: "Prys op aanvraag",
     bedrooms: (n) => `${n} slaapkamer${n === 1 ? "" : "s"}`,
     mission: "Missie",
     terms: "Bepalings",
@@ -225,7 +226,8 @@ export default function CommunityHome() {
 
   // Hunters see their open daily missions inside the feed
   const userId = user?.id;
-  const isHunter = HUNTERS_ENABLED && !!user?.user_metadata?.hunter;
+  const { hunter } = useHunter();
+  const isHunter = HUNTERS_ENABLED && !!hunter;
   useEffect(() => {
     if (!userId || !isHunter) {
       setQuests([]);

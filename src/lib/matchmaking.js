@@ -1,12 +1,22 @@
+// src/lib/matchmaking.js
 import { supabase } from "@/lib/supabase";
 
+// A searching player counts as "still here" for this long.
+// (The lobby cancels a search after 90s, so anything older was abandoned.)
+const FRESH_MS = 2 * 60 * 1000;
+// Anything older than this is junk and gets swept away.
+const JUNK_MS = 10 * 60 * 1000;
+
 export async function findAndClaimWaitingOpponent(game, myCell) {
+  const freshAfter = new Date(Date.now() - FRESH_MS).toISOString();
+
   const { data: candidates } = await supabase
     .from("matchmaking_queue")
     .select("*")
     .eq("game", game)
     .eq("status", "waiting")
     .neq("player_cell", myCell)
+    .gte("created_at", freshAfter)
     .order("created_at", { ascending: true })
     .limit(5);
 
@@ -28,6 +38,15 @@ export async function findAndClaimWaitingOpponent(game, myCell) {
 }
 
 export async function createQueueEntry(game, myName, myCell) {
+  // Sweep abandoned entries and any old search of mine before queuing again
+  const junkBefore = new Date(Date.now() - JUNK_MS).toISOString();
+  await supabase.from("matchmaking_queue").delete().lt("created_at", junkBefore);
+  await supabase
+    .from("matchmaking_queue")
+    .delete()
+    .eq("player_cell", myCell)
+    .eq("status", "waiting");
+
   const { data } = await supabase
     .from("matchmaking_queue")
     .insert({ game, player_name: myName, player_cell: myCell, status: "waiting" })

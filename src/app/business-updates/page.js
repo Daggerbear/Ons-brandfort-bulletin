@@ -91,7 +91,7 @@ export default function BusinessUpdates() {
       latest: "Nuutste",
       all: "Alles",
       share: "Deel",
-      composer: "Het jy nuus, 'n spesiaal of nuwe voorraad? Plaas dit hier.",
+      composer: "Het jy nuus, 'n spesiale aanbieding of nuwe voorraad? Plaas dit hier.",
       composerCta: "Plaas",
     },
     en: {

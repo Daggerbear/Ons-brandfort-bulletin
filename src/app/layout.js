@@ -4,10 +4,9 @@ import { Analytics } from "@vercel/analytics/react";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 import BulletinHelper from "@/components/BulletinHelper";
-import RadioPlayer from "@/components/RadioPlayer";
 import { AuthProvider } from "@/components/AuthProvider";
 import { LangProvider } from "@/components/LangProvider";
-
+import RadioPlayer from "@/components/RadioPlayer"; // <-- We brought this back!
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,8 +77,9 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <LangProvider>
             <AppShell>{children}</AppShell>
-            <RadioPlayer />
             <BulletinHelper />
+            {/* The actual player is back */}
+            <RadioPlayer /> 
           </LangProvider>
         </AuthProvider>
         <Analytics />

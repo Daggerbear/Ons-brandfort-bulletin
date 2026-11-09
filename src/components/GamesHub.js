@@ -14,24 +14,24 @@ const pixel = Press_Start_2P({
 });
 
 const games = [
-  { name: "Battleship", icon: "🚢", desc: { en: "Real-time vs a friend.", af: "Intyds teen 'n vriend." }, href: "/games/battleship", color: "cyan", group: "duel", badge: { en: "2P", af: "2S" } },
-  { name: "Chess", icon: "♟️", desc: { en: "Classic 1v1, real-time.", af: "Klassieke 1v1, intyds." }, href: "/games/chess", color: "green", group: "duel", badge: { en: "2P", af: "2S" } },
-  { name: "Checkers", icon: "🔴", desc: { en: "Classic 1v1, real-time.", af: "Klassieke 1v1, intyds." }, href: "/games/checkers", color: "red", group: "duel", badge: { en: "2P", af: "2S" } },
+  { name: "Battleship", icon: "🚢", desc: { en: "Real-time vs a friend.", af: "Regstreeks teen 'n vriend." }, href: "/games/battleship", color: "cyan", group: "duel", badge: { en: "2P", af: "2 SP" } },
+  { name: "Chess", icon: "♟️", desc: { en: "Classic 1v1, real-time.", af: "Klassieke 1v1, regstreeks." }, href: "/games/chess", color: "green", group: "duel", badge: { en: "2P", af: "2 SP" } },
+  { name: "Checkers", icon: "🔴", desc: { en: "Classic 1v1, real-time.", af: "Klassieke 1v1, regstreeks." }, href: "/games/checkers", color: "red", group: "duel", badge: { en: "2P", af: "2 SP" } },
   { name: "Sudoku", icon: "🔢", desc: { en: "3 difficulty levels.", af: "3 moeilikheidsvlakke." }, href: "/games/sudoku", color: "purple", group: "puzzle" },
-  { name: "Riddle Rush", icon: "🧩", desc: { en: "Daily riddle, 3 tries.", af: "Daaglikse raaisel, 3 pogings." }, href: "/games/riddle-rush", color: "pink", group: "puzzle", badge: { en: "DAILY", af: "DAAG" } },
+  { name: "Riddle Rush", icon: "🧩", desc: { en: "Daily riddle, 3 tries.", af: "Daaglikse raaisel, 3 pogings." }, href: "/games/riddle-rush", color: "pink", group: "puzzle", badge: { en: "DAILY", af: "DAAGLIKS" } },
   { name: "Merge Rush", icon: "🔢", desc: { en: "Swipe to merge, reach 2048.", af: "Swiep om saam te voeg, bereik 2048." }, href: "/games/merge-rush", color: "cyan", group: "puzzle" },
-  { name: "Block Rush", icon: "🧱", desc: { en: "Falling block puzzle.", af: "Val-blok raaisel." }, href: "/games/block-rush", color: "cyan", group: "arcade" },
+  { name: "Block Rush", icon: "🧱", desc: { en: "Falling block puzzle.", af: "Val-blok-raaisel." }, href: "/games/block-rush", color: "cyan", group: "arcade" },
   { name: "Whack-a-Mole", icon: "🔨", desc: { en: "Tap the mole, beat the clock.", af: "Tik die mol, klop die horlosie." }, href: "/games/whack-a-mole", color: "purple", group: "arcade" },
-  { name: "Snake", icon: "🐍", desc: { en: "Classic snake, swipe controls.", af: "Klassieke slang, swiep beheer." }, href: "/games/snake", color: "green", group: "arcade" },
-  { name: "Brick Breaker", icon: "🧱", desc: { en: "Drag paddle, break bricks.", af: "Sleep die kolf, breek stene." }, href: "/games/brick-breaker", color: "pink", group: "arcade" },
+  { name: "Snake", icon: "🐍", desc: { en: "Classic snake, swipe controls.", af: "Klassieke slang, beheer met swiep." }, href: "/games/snake", color: "green", group: "arcade" },
+  { name: "Brick Breaker", icon: "🧱", desc: { en: "Drag paddle, break bricks.", af: "Sleep die peddel, breek die stene." }, href: "/games/brick-breaker", color: "pink", group: "arcade" },
   { name: "Idle Empire", icon: "🏘️", desc: { en: "Grow a town, even while away.", af: "Laat 'n dorp groei, selfs as jy weg is." }, href: "/games/idle-empire", color: "amber", group: "collect", badge: { en: "NEW", af: "NUUT" } },
   { name: "Hue Hoard", icon: "🎨", desc: { en: "Mix colours, fill your gallery.", af: "Meng kleure, vul jou galery." }, href: "/games/hue-hoard", color: "pink", group: "collect", badge: { en: "NEW", af: "NUUT" } },
   { name: "Merge & Collect", icon: "✨", desc: { en: "Merge items, complete the book.", af: "Voeg items saam, voltooi die boek." }, href: "/games/merge-collect", color: "cyan", group: "collect", badge: { en: "NEW", af: "NUUT" } },
 ];
 
 const groups = [
-  { key: "duel", title: { en: "VS A FRIEND", af: "TEEN 'N VRIEND" }, sub: { en: "real-time 1v1", af: "intyds 1v1" } },
-  { key: "puzzle", title: { en: "PUZZLES", af: "RAAISELS" }, sub: { en: "take your time", af: "neem jou tyd" } },
+  { key: "duel", title: { en: "VS A FRIEND", af: "TEEN 'N VRIEND" }, sub: { en: "real-time 1v1", af: "regstreeks 1v1" } },
+  { key: "puzzle", title: { en: "PUZZLES", af: "RAAISELS" }, sub: { en: "take your time", af: "vat jou tyd" } },
   { key: "arcade", title: { en: "ARCADE", af: "ARCADE" }, sub: { en: "quick reflexes", af: "vinnige reflekse" } },
   { key: "collect", title: { en: "COLLECT", af: "VERSAMEL" }, sub: { en: "one more upgrade", af: "net nog een opgradering" } },
 ];
@@ -62,8 +62,8 @@ export default function GamesHub({ heroUrl, logoUrl }) {
   const L = lang === "af" ? "af" : "en";
 
   const t = {
-    en: { tagline: "LOCAL GAME ROOM", press: "PRESS START", count: (n) => `${n} GAMES • FREE`, soon: "MORE GAMES LOADING..." },
-    af: { tagline: "PLAASLIKE SPELETJIEKAMER", press: "DRUK START", count: (n) => `${n} SPELETJIES • GRATIS`, soon: "MEER SPELETJIES LAAI..." },
+    en: { tagline: "LOCAL GAME ROOM", press: "PRESS START", count: (n) => `${n} GAMES • FREE`, soon: "MORE GAMES LOADING...", board: "LEADERBOARD", boardSub: "Who is top of Glitch Cafe this month?" },
+    af: { tagline: "PLAASLIKE SPELETJIEKAMER", press: "DRUK START", count: (n) => `${n} SPELETJIES • GRATIS`, soon: "MEER SPELETJIES KOM BINNEKORT...", board: "RANGLYS", boardSub: "Wie is hierdie maand bo in Glitch Cafe?" },
   }[L];
 
   return (
@@ -122,6 +122,24 @@ export default function GamesHub({ heroUrl, logoUrl }) {
             {t.count(games.length)}
           </div>
         </header>
+
+        {/* Leaderboard */}
+        <Link
+          href="/games/leaderboard"
+          className="mb-5 flex items-center gap-3 bg-black p-3 transition-transform active:translate-x-[3px] active:translate-y-[3px]"
+          style={{ border: "4px solid #fbbf24", boxShadow: "5px 5px 0 0 #92400e" }}
+        >
+          <span className="text-4xl [image-rendering:pixelated]">🏆</span>
+          <span className="min-w-0 flex-1">
+            <span className={`${pixel.className} block text-[10px] leading-snug text-yellow-300`}>
+              {t.board}
+            </span>
+            <span className="mt-1 block font-mono text-[11px] leading-tight text-neutral-400">
+              {t.boardSub}
+            </span>
+          </span>
+          <span className={`${pixel.className} text-sm text-yellow-300`}>▶</span>
+        </Link>
 
         {/* Radio */}
         <ListenLiveCard lang={L} />

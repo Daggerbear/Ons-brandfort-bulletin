@@ -9,12 +9,12 @@ export default function Terms() {
   const text = {
     af: {
       title: "Bepalings en Voorwaardes",
-      updated: "Laas opgedateer: Oktober 2026",
+      updated: "Laas opgedateer: November 2026",
       sections: [
         {
           h: "1. Oor Ons Brandfort Bulletin",
           p: [
-            "Ons Brandfort Bulletin is 'n gratis, gemeenskapsgebaseerde platform vir die dorp Brandfort, geskep en bedryf deur Jaco du Plessis as 'n eenmansaak. Deur hierdie webwerf te gebruik, stem jy in tot hierdie bepalings en ons Privaatheidsbeleid.",
+            "Ons Brandfort Bulletin is 'n gratis, gemeenskapsgebaseerde platform vir die dorp Brandfort, geskep en bedryf deur Jaco du Plessis as 'n eenmansaak. Deur hierdie webwerf te gebruik, aanvaar jy hierdie bepalings en ons Privaatheidsbeleid.",
           ],
         },
         {
@@ -71,7 +71,7 @@ export default function Terms() {
           ],
         },
         {
-          h: "8. Lientjie en Nood Kontakte",
+          h: "8. Lientjie en Noodkontakte",
           p: [
             "Lientjie is 'n outomatiese hulpmiddel wat jou na die regte bladsy of besigheid wys. Sy kan foute maak — bevestig belangrike besonderhede (soos openingstye) by die besigheid self. Sy gee nie professionele, mediese, regs- of finansiële advies nie.",
             "Nood-kontaknommers is vir gerief. In 'n noodgeval, kontak die amptelike nooddienste direk. Ons waarborg nie dat elke nommer altyd korrek is nie.",
@@ -85,17 +85,41 @@ export default function Terms() {
           ],
         },
         {
-          h: "10. Wysigings",
+          h: "10. Hunter-modus en Global Brandfort",
+          p: [
+            "Hunter-modus is opsioneel. As jy 'n Hunter word, kies jy 'n unieke speelnaam. Jou speelnaam en jou bydraes tot Global Brandfort (die gedeelde digitale dorp) kan openbaar op ranglyste en in die dorp vertoon word. Kies 'n naam wat jy gemaklik is om met almal te deel. Moenie 'n naam kies wat aanstootlik is, iemand anders naboots, of 'n besigheid is nie.",
+            "XP, vlakke, missies, hulpbronne (soos energie en materiaal), geboue, rame, kentekens, titels en ander items het geen geldwaarde nie. Hulle kan nie gekoop, verkoop, geruil of vir geld of pryse verruil word nie, en niemand kan voordeel koop nie.",
+            "Missies en belonings word op ons bediener bevestig. Om te kul of te probeer kul (bv. met outomatiese programme, deur foute te misbruik of data te verander) kan lei tot die verwydering van XP, bydraes of items, en tot opskorting van jou rekening.",
+            "Ons kan missies, belonings, die koste van geboue, items, ranglyste en die dorp self enige tyd verander, hersien of terugstel. Beperkte items kan weggelaat word en sal nie noodwendig weer beskikbaar wees nie. Ons waarborg nie dat enige item, vordering of die dorp altyd beskikbaar sal bly nie.",
+            "Geboue en ander dele van Global Brandfort is digitale voorstellings vir pret. Hulle het niks met werklike eiendom, grond of bouwerk in Brandfort te doen nie.",
+          ],
+        },
+        {
+          h: "11. Verwydering van Inhoud en Klagtes",
+          p: [
+            "As jy glo dat inhoud op die Bulletin onwettig is, jou regte oortree (insluitend kopiereg) of jou skade doen, stuur ons asseblief 'n kennisgewing met: die skakel na die inhoud, 'n beskrywing van die probleem, jou naam en kontakbesonderhede, en (by kopiereg) bewys dat jy die regtehebbende is.",
+            "Ons sal die kennisgewing so gou moontlik hersien en kan die inhoud tydelik of permanent verwyder terwyl ons dit ondersoek. Ons kan die persoon wat dit geplaas het in kennis stel. Valse of kwaadwillige klagtes kan geweier word.",
+            "Gebruik die kontakbesonderhede onderaan hierdie bladsy om 'n kennisgewing te stuur.",
+          ],
+        },
+        {
+          h: "12. Vrywaring",
+          p: [
+            "Jy vrywaar Ons Brandfort Bulletin en Jaco du Plessis teen enige eis, verlies of koste wat voortspruit uit inhoud wat jy plaas, jou gebruik van die webwerf, of jou oortreding van hierdie bepalings of enige wet.",
+          ],
+        },
+        {
+          h: "13. Wysigings",
           p: [
             "Ons kan hierdie bepalings te eniger tyd wysig. Voortgesette gebruik van die webwerf na wysigings beteken jy aanvaar die bygewerkte bepalings. Die datum bo-aan wys wanneer dit laas verander is.",
           ],
         },
         {
-          h: "11. Toepaslike Reg",
+          h: "14. Toepaslike Reg",
           p: ["Hierdie bepalings word deur die wette van Suid-Afrika beheer."],
         },
         {
-          h: "12. Kontak Ons",
+          h: "15. Kontak Ons",
           p: [
             "Vir enige vrae oor hierdie bepalings, kontak Jaco du Plessis:",
             "WhatsApp: 060 366 1384",
@@ -106,7 +130,7 @@ export default function Terms() {
     },
     en: {
       title: "Terms and Conditions",
-      updated: "Last updated: October 2026",
+      updated: "Last updated: November 2026",
       sections: [
         {
           h: "1. About Ons Brandfort Bulletin",
@@ -182,17 +206,41 @@ export default function Terms() {
           ],
         },
         {
-          h: "10. Changes",
+          h: "10. Hunter Mode and Global Brandfort",
+          p: [
+            "Hunter Mode is optional. If you become a Hunter, you choose a unique gamer name. Your gamer name and your contributions to Global Brandfort (the shared digital town) may be shown publicly on leaderboards and in the town. Pick a name you are comfortable sharing with everyone. Don't choose a name that is offensive, impersonates someone else, or is a business name.",
+            "XP, levels, missions, resources (such as energy and materials), buildings, frames, badges, titles and other items have no monetary value. They cannot be bought, sold, traded, or exchanged for money or prizes, and no one can buy an advantage.",
+            "Missions and rewards are confirmed on our server. Cheating or trying to cheat (for example with automated programs, by abusing bugs or by changing data) can lead to the removal of XP, contributions or items, and to suspension of your account.",
+            "We may change, adjust or reset missions, rewards, building costs, items, leaderboards and the town itself at any time. Limited items may be discontinued and may not return. We do not guarantee that any item, progress or the town will always remain available.",
+            "Buildings and other parts of Global Brandfort are digital representations for fun. They have nothing to do with real property, land or construction in Brandfort.",
+          ],
+        },
+        {
+          h: "11. Removing Content and Complaints",
+          p: [
+            "If you believe content on the Bulletin is unlawful, infringes your rights (including copyright) or causes you harm, please send us a notice with: the link to the content, a description of the problem, your name and contact details, and (for copyright) proof that you are the rights holder.",
+            "We will review the notice as soon as we can and may remove the content temporarily or permanently while we look into it. We may notify the person who posted it. False or malicious complaints may be rejected.",
+            "Use the contact details at the bottom of this page to send a notice.",
+          ],
+        },
+        {
+          h: "12. Indemnity",
+          p: [
+            "You indemnify Ons Brandfort Bulletin and Jaco du Plessis against any claim, loss or cost arising from content you post, your use of the website, or your breach of these terms or any law.",
+          ],
+        },
+        {
+          h: "13. Changes",
           p: [
             "We may modify these terms at any time. Continued use of the website after changes means you accept the updated terms. The date at the top shows when they were last changed.",
           ],
         },
         {
-          h: "11. Governing Law",
+          h: "14. Governing Law",
           p: ["These terms are governed by the laws of South Africa."],
         },
         {
-          h: "12. Contact Us",
+          h: "15. Contact Us",
           p: [
             "For any questions about these terms, contact Jaco du Plessis:",
             "WhatsApp: 060 366 1384",
@@ -216,7 +264,7 @@ export default function Terms() {
           {t.sections.map((s, i) => (
             <div key={i}>
               <h2 className="text-lg font-semibold text-orange-400 mb-2">{s.h}</h2>
-              {s.p.map((para, j) => (
+            {s.p.map((para, j) => (
                 <p key={j} className="text-neutral-300 leading-relaxed mb-2">
                   {para}
                 </p>

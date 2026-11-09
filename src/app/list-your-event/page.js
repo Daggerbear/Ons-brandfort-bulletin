@@ -47,15 +47,15 @@ export default function ListEvent() {
 
   const text = {
     af: {
-      heading: "Lys Jou Gebeurtenis",
+      heading: "Plaas Jou Gebeurtenis",
       sub: "Gratis, altyd. Vul die vorm in en ons keur dit gou goed.",
-      title: "Gebeurtenis Naam",
+      title: "Gebeurtenisnaam",
       date: "Datum",
       time: "Tyd",
       location: "Plek",
       description: "Beskrywing",
       submittedBy: "Jou Naam",
-      whatsapp: "WhatsApp Nommer (bv. 0821234567)",
+      whatsapp: "WhatsApp-nommer (bv. 0821234567)",
       photo: "Foto (opsioneel)",
       choosePhoto: "Kies foto",
       changePhoto: "Verander foto",
@@ -66,7 +66,7 @@ export default function ListEvent() {
       thanksSub: "Ons keur dit gou goed en dan verskyn dit op die Bulletin.",
       back: "Terug na Tuisblad",
       viewCommunity: "Kyk na Gemeenskap",
-      agree: "Deur in te dien, stem jy in tot ons",
+      agree: "Deur in te dien, aanvaar jy ons",
       terms: "Bepalings & Voorwaardes",
       errorPhoto: "Kon nie die foto oplaai nie. Probeer 'n ander foto, of verwyder dit en probeer weer.",
       errorGeneric: "Iets het skeefgeloop. Probeer asseblief weer.",

@@ -62,7 +62,7 @@ const text = {
     sub: "Huise, woonstelle en kamers in Brandfort.",
     disclaimer:
       "Alle reëlings gebeur direk tussen jou en die eienaar via WhatsApp — Bulletin is nie deel van enige huur- of koopooreenkoms nie. Besigtig altyd eers voordat jy betaal.",
-    privacyNote: "Deur te plaas, stem jy in tot ons",
+    privacyNote: "Deur te plaas, aanvaar jy ons",
     privacyLink: "privaatheidsbeleid",
     priceOnRequest: "Prys op aanvraag",
     perMonth: "/maand",

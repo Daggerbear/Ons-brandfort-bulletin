@@ -34,7 +34,7 @@ const labels = {
     addItems: "Voeg ten minste een item by jou bestelling.",
     choose: "Kies",
     requiredChoice: "Kies asseblief",
-    itemTypes: "item tipes",
+    itemTypes: "itemtipes",
     other: "Ander",
   },
   en: {

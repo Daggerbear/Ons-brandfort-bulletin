@@ -11,14 +11,11 @@ const text = {
     button: "Word 'n Hunter",
     nameLabel: "Speelnaam",
     namePlaceholder: "bv. VeldVark",
-    phoneLabel: "Selnommer (opsioneel)",
-    phoneHelp:
-      "Net vir jou rekening, vir toekomstige beloning-boodskappe. Ons wys dit nooit aan ander nie.",
     save: "Begin jag",
     saving: "Stoor...",
     cancel: "Kanselleer",
     nameRule: "Jou speelnaam moet tussen 3 en 20 karakters wees (letters, syfers, _ en -).",
-    phoneRule: "Gebruik 'n Suid-Afrikaanse nommer, bv. 0821234567.",
+    taken: "Hierdie speelnaam is reeds in gebruik. Kies 'n ander een.",
     failed: "Kon nie stoor nie. Probeer asseblief weer.",
   },
   en: {
@@ -28,31 +25,19 @@ const text = {
     button: "Become a Hunter",
     nameLabel: "Gamer name",
     namePlaceholder: "e.g. VeldVark",
-    phoneLabel: "Cell number (optional)",
-    phoneHelp:
-      "Only for your account, for future reward messages. We never show it to others.",
     save: "Start hunting",
     saving: "Saving...",
     cancel: "Cancel",
     nameRule: "Your gamer name must be 3 to 20 characters (letters, numbers, _ and -).",
-    phoneRule: "Use a South African number, e.g. 0821234567.",
+    taken: "That gamer name is already taken. Please pick another.",
     failed: "Couldn't save. Please try again.",
   },
 };
 
-// 0821234567, 082 123 4567 or +27821234567 -> 0821234567
-function cleanPhone(raw) {
-  const digits = String(raw || "").replace(/[\s()-]/g, "");
-  if (!digits) return "";
-  const local = digits.startsWith("+27") ? "0" + digits.slice(3) : digits;
-  return /^0\d{9}$/.test(local) ? local : null;
-}
-
-export default function HunterSignup({ lang = "af", defaultName = "" }) {
+export default function HunterSignup({ lang = "af", defaultName = "", onJoined }) {
   const t = text[lang] || text.af;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(defaultName);
-  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -61,16 +46,14 @@ export default function HunterSignup({ lang = "af", defaultName = "" }) {
     setError(null);
     const gamer = name.trim();
     if (!/^[A-Za-z0-9_-]{3,20}$/.test(gamer)) return setError(t.nameRule);
-    const cell = cleanPhone(phone);
-    if (cell === null) return setError(t.phoneRule);
 
     setSaving(true);
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { hunter: true, gamer_name: gamer, phone: cell || null },
-    });
+    const { error: rpcError } = await supabase.rpc("become_hunter", { p_gamer_name: gamer });
     setSaving(false);
-    // On success AuthProvider hears the update and the profile switches to Hunter mode
-    if (updateError) setError(t.failed);
+    if (rpcError) {
+      return setError(String(rpcError.message || "").includes("name_taken") ? t.taken : t.failed);
+    }
+    if (onJoined) onJoined();
   };
 
   if (!open) {
@@ -113,22 +96,6 @@ export default function HunterSignup({ lang = "af", defaultName = "" }) {
           autoComplete="off"
           className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-3 text-white outline-none focus:border-cyan-400"
         />
-      </div>
-
-      <div>
-        <label htmlFor="hunter_phone" className="mb-1 block text-xs text-neutral-400">
-          {t.phoneLabel}
-        </label>
-        <input
-          id="hunter_phone"
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          maxLength={16}
-          autoComplete="tel"
-          className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-3 text-white outline-none focus:border-cyan-400"
-        />
-        <p className="mt-1 text-xs text-neutral-500">{t.phoneHelp}</p>
       </div>
 
       {error && (

@@ -5,10 +5,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import Avatar from "@/components/Avatar";
-import XpCard from "@/components/XpCard";
+import ProfileTabs from "@/components/ProfileTabs";
 import MyPosts from "@/components/MyPosts";
-import HunterSignup from "@/components/HunterSignup";
 import { HUNTERS_ENABLED } from "@/lib/features";
+import { useHunter } from "@/lib/useHunter";
 import { useLang } from "@/components/LangProvider";
 
 const GAMES = [
@@ -27,7 +27,7 @@ const GAMES = [
 const text = {
   af: {
     title: "My Profiel",
-    private: "Net jy kan hierdie profiel sien.",
+    private: "Jou profielinligting word gebruik om vorms makliker in te vul, en meer.",
     signInTitle: "Teken in om jou profiel te sien",
     signInNote: "Jy kan die Bulletin steeds sonder 'n rekening gebruik.",
     signIn: "Teken in met Google",
@@ -38,6 +38,10 @@ const text = {
     nameLabel: "Vertoonnaam",
     nameHelp:
       "Gebruik jou eie naam. Moet asseblief nie 'n besigheidsnaam gebruik nie. Besigheidsrekeninge kom later.",
+    whatsappLabel: "WhatsApp-nommer (opsioneel)",
+    whatsappHelp:
+      "Word net gebruik om jou plasings vooraf in te vul. Dit word nooit gewys tensy jy dit self in 'n plasing sit.",
+    whatsappRule: "Gebruik 'n geldige nommer, bv. 0821234567.",
     bioLabel: "Kort bio (opsioneel)",
     gameLabel: "Gunsteling speletjie (opsioneel)",
     gameNone: "Geen",
@@ -54,7 +58,7 @@ const text = {
   },
   en: {
     title: "My Profile",
-    private: "Only you can see this profile.",
+    private: "Your profile info is used for easier form fill-in and more.",
     signInTitle: "Sign in to see your profile",
     signInNote: "You can still use the Bulletin without an account.",
     signIn: "Sign in with Google",
@@ -65,6 +69,10 @@ const text = {
     nameLabel: "Display name",
     nameHelp:
       "Use your own name. Please don't use a business name. Business accounts are coming later.",
+    whatsappLabel: "WhatsApp number (optional)",
+    whatsappHelp:
+      "Only used to prefill your posts. It is never shown unless you put it in a post yourself.",
+    whatsappRule: "Use a valid number, e.g. 0821234567.",
     bioLabel: "Short bio (optional)",
     gameLabel: "Favourite game (optional)",
     gameNone: "None",
@@ -81,7 +89,7 @@ const text = {
   },
 };
 
-const COLUMNS = "id, display_name, bio, favourite_game, account_type, created_at";
+const COLUMNS = "id, display_name, bio, favourite_game, whatsapp, account_type, created_at";
 
 // First name from Google, used only as the suggested display name
 function firstNameFrom(user) {
@@ -104,12 +112,14 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [game, setGame] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null); // { type: "ok" | "error", text }
 
   const userId = user?.id;
-  const isHunter = HUNTERS_ENABLED && !!user?.user_metadata?.hunter;
-  const gamerName = user?.user_metadata?.gamer_name || "";
+  const { hunter } = useHunter();
+  const isHunter = HUNTERS_ENABLED && !!hunter;
+  const gamerName = hunter?.gamer_name || "";
   const gameLabel = GAMES.find((g) => g.slug === profile?.favourite_game)?.label;
 
   useEffect(() => {
@@ -134,6 +144,7 @@ export default function ProfilePage() {
       setName(data?.display_name ?? firstNameFrom(user));
       setBio(data?.bio ?? "");
       setGame(data?.favourite_game ?? "");
+      setWhatsapp(data?.whatsapp ?? "");
       setTotalXp(xpResult.error ? 0 : Number(xpResult.data) || 0);
       setStatus("ready");
     });
@@ -155,11 +166,19 @@ export default function ProfilePage() {
       return setMessage({ type: "error", text: t.bioRule });
     }
 
+    // Keep digits only (and a leading +), 9 to 15 digits
+    const rawWa = whatsapp.trim();
+    const cleanWa = rawWa.replace(/[^\d]/g, "");
+    if (rawWa && (cleanWa.length < 9 || cleanWa.length > 15)) {
+      return setMessage({ type: "error", text: t.whatsappRule });
+    }
+
     setSaving(true);
     const payload = {
       display_name: cleanName,
       bio: cleanBio || null,
       favourite_game: game || null,
+      whatsapp: rawWa ? cleanWa : null,
     };
     const { data, error } = profile
       ? await supabase
@@ -180,6 +199,7 @@ export default function ProfilePage() {
     setName(data.display_name);
     setBio(data.bio ?? "");
     setGame(data.favourite_game ?? "");
+    setWhatsapp(data.whatsapp ?? "");
     setMessage({ type: "ok", text: t.saved });
   };
 
@@ -250,17 +270,10 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {HUNTERS_ENABLED &&
-              (isHunter ? (
-                <div className="mt-4">
-                  <XpCard totalXp={totalXp} lang={lang} />
-                </div>
-              ) : (
-                <HunterSignup lang={lang} defaultName={firstNameFrom(user)} />
-              ))}
+            <ProfileTabs lang={lang} />
 
             <p className="mt-3 text-center text-xs text-neutral-500">
-              🔒 {t.private}
+              ⚡ {t.private}
             </p>
 
             <MyPosts userId={userId} lang={lang} />
@@ -306,6 +319,26 @@ export default function ProfilePage() {
                 <p className="mt-1 text-right text-xs text-neutral-500">
                   {bio.length}/200
                 </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="whatsapp"
+                  className="mb-1 block text-xs text-neutral-400"
+                >
+                  {t.whatsappLabel}
+                </label>
+                <input
+                  id="whatsapp"
+                  type="tel"
+                  inputMode="tel"
+                  value={whatsapp}
+                  onChange={(event) => setWhatsapp(event.target.value)}
+                  maxLength={20}
+                  autoComplete="tel"
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-3 text-white outline-none focus:border-orange-500"
+                />
+                <p className="mt-1 text-xs text-neutral-500">{t.whatsappHelp}</p>
               </div>
 
               <div>

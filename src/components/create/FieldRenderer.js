@@ -10,9 +10,9 @@ const UI = {
     choosePhoto: "Tik om 'n foto te kies",
     takePhoto: "Neem of kies 'n foto",
     remove: "Verwyder",
-    onRequest: "Prys op navraag",
+    onRequest: "Prys op aanvraag",
     addVideo: "＋ Voeg 'n video by",
-    videoPlaceholder: "Plak 'n YouTube skakel",
+    videoPlaceholder: "Plak 'n YouTube-skakel",
   },
   en: {
     choosePhoto: "Tap to choose a photo",

@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSuggestedName } from "@/lib/useSuggestedName";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { saveScore as saveScoreRow, currentPlayerName } from "@/lib/scores";
 import GameSponsorBanner from "@/components/GameSponsorBanner";
 
 const HOLE_COUNT = 9;
@@ -14,30 +13,16 @@ export default function WhackAMole() {
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [playing, setPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [playerName, setPlayerName] = useState("");
-  const suggestedPlayerName = useSuggestedName();
   useEffect(() => {
-    if (suggestedPlayerName) setPlayerName((current) => current || suggestedPlayerName);
-  }, [suggestedPlayerName]);
+    setPlayerName(currentPlayerName());
+  }, []);
   const [scoreSaved, setScoreSaved] = useState(false);
+  const [scoreError, setScoreError] = useState(false);
   const [whacked, setWhacked] = useState(null);
 
   const moleTimeout = useRef(null);
   const gameInterval = useRef(null);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  async function fetchLeaderboard() {
-    const { data } = await supabase
-      .from("whack_a_mole_scores")
-      .select("*")
-      .order("score", { ascending: false })
-      .limit(10);
-    setLeaderboard(data || []);
-  }
 
   const popMole = useCallback(() => {
     const hole = Math.floor(Math.random() * HOLE_COUNT);
@@ -55,7 +40,7 @@ export default function WhackAMole() {
     setTimeLeft(GAME_DURATION);
     setGameOver(false);
     setScoreSaved(false);
-    setPlayerName("");
+    setPlayerName(currentPlayerName());
     setPlaying(true);
     popMole();
 
@@ -90,13 +75,14 @@ export default function WhackAMole() {
   }
 
   async function saveScore() {
-    if (!playerName.trim() || scoreSaved) return;
-    await supabase.from("whack_a_mole_scores").insert({
-      player_name: playerName.trim(),
-      score,
-    });
+    if (!playerName || scoreSaved) return;
+    const { error } = await saveScoreRow("whack_a_mole_scores", score);
+    if (error) {
+      setScoreError(true);
+      return;
+    }
+    setScoreError(false);
     setScoreSaved(true);
-    fetchLeaderboard();
   }
 
   useEffect(() => {
@@ -146,14 +132,10 @@ export default function WhackAMole() {
         <div className="text-center mb-6 w-full max-w-xs">
           <p className="text-xl mb-3">🎉 Game Over — {score} pts</p>
           {!scoreSaved ? (
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Your name"
-                className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white"
-              />
+            <div className="flex items-center gap-2 mb-3">
+              <p className="flex-1 text-left text-sm text-neutral-300">
+                Saving as <span className="text-orange-400 font-semibold">{playerName}</span>
+              </p>
               <button
                 onClick={saveScore}
                 className="bg-purple-600 hover:bg-purple-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2"
@@ -162,7 +144,14 @@ export default function WhackAMole() {
               </button>
             </div>
           ) : (
-            <p className="text-green-400 text-sm mb-3">✓ Score saved!</p>
+            <p className="text-green-400 text-sm mb-3">✓ Score saved!{" "}
+              <Link href="/games/leaderboard" className="underline text-cyan-400">
+                See the Glitch Cafe leaderboard
+              </Link>
+            </p>
+          )}
+          {scoreError && (
+            <p className="text-red-400 text-sm mb-3">{"Couldn\'t save your score. Try again."}</p>
           )}
           <button
             onClick={startGame}
@@ -195,26 +184,6 @@ export default function WhackAMole() {
         ))}
       </div>
 
-      {leaderboard.length > 0 && (
-        <div className="mt-8 w-full max-w-xs">
-          <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-wide mb-2 text-center">
-            🏆 Top Scores
-          </h2>
-          <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
-            {leaderboard.map((entry, i) => (
-              <div
-                key={entry.id}
-                className="flex justify-between px-3 py-2 text-sm border-b border-neutral-800 last:border-0"
-              >
-                <span className="text-neutral-300">
-                  {i + 1}. {entry.player_name}
-                </span>
-                <span className="text-cyan-400 font-semibold">{entry.score}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <GameSponsorBanner gameSlug="whack-a-mole" />
 

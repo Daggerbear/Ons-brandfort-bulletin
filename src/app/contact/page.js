@@ -11,7 +11,7 @@ export default function Contact() {
     af: {
       title: "Kontak Ons",
       intro:
-        "Het jy 'n vraag, wil jy iets regstel, of wil jy meer weet oor adverteer-geleenthede? Kontak Jaco direk — hy antwoord persoonlik.",
+        "Het jy 'n vraag, wil jy iets regstel, of wil jy meer weet oor advertensiegeleenthede? Kontak Jaco direk — hy antwoord persoonlik.",
       topicsTitle: "Waarmee Ons Kan Help",
       topics: [
         "Besigheidslysings — nuwe lysing, veranderinge, of verwydering",

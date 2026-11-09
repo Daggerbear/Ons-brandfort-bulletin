@@ -26,6 +26,7 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
   const [name, setName] = useState("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const style = CATEGORY_STYLES[post.category];
   const author = post.name || "?";
@@ -44,14 +45,20 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
     if (given) setName((current) => current || given);
   }, [given]);
 
+  function needSignIn() {
+    setNotice(lang === "af" ? "Teken in om dit te doen." : "Sign in to do that.");
+    setTimeout(() => setNotice(""), 3000);
+  }
+
   async function handleLike() {
     if (liked) return;
-    const { error } = await supabase
-      .from("posts")
-      .update({ likes: likes + 1 })
-      .eq("id", post.id);
+    if (!user) return needSignIn();
+    const { data, error } = await supabase.rpc("like_post", {
+      p_id: String(post.id),
+      p_delta: 1,
+    });
     if (!error) {
-      setLikes(likes + 1);
+      setLikes(typeof data === "number" ? data : likes + 1);
       setLiked(true);
       localStorage.setItem("likedPosts", JSON.stringify([...readList("likedPosts"), post.id]));
     }
@@ -59,12 +66,12 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
 
   async function handleFlag() {
     if (flagged) return;
-    const next = flags + 1;
+    if (!user) return needSignIn();
+    const { data, error } = await supabase.rpc("flag_post", {
+      p_id: String(post.id),
+    });
+    const next = typeof data === "number" ? data : flags + 1;
     const hide = next >= 3;
-    const { error } = await supabase
-      .from("posts")
-      .update({ flag_count: next, is_hidden: hide })
-      .eq("id", post.id);
     if (!error) {
       setFlags(next);
       setFlagged(true);
@@ -84,6 +91,7 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
     const cleanName = name.trim();
     const content = text.trim();
     if (!cleanName || !content) return;
+    if (!user) return needSignIn();
     setSending(true);
     const { data, error } = await supabase
       .from("comments")
@@ -202,6 +210,10 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
           📲 {lang === "af" ? "Deel" : "Share"}
         </button>
       </div>
+
+      {notice && (
+        <p className="mt-2 text-center text-xs text-orange-400">{notice}</p>
+      )}
 
       {open && (
         <div className="mt-3 flex flex-col gap-3 border-t border-neutral-800 pt-3">

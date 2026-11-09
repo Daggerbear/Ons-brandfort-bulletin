@@ -18,12 +18,12 @@ const UI = {
     send: "Plaas",
     submit: "Dien in",
     sending: "Stuur...",
-    agree: "Deur te plaas, stem jy in tot ons",
+    agree: "Deur te plaas, aanvaar jy ons",
     terms: "Bepalings",
     fill: (l) => `Vul asseblief "${l}" in.`,
     photoFail: "Kon nie die foto oplaai nie. Probeer 'n ander foto, of verwyder dit.",
     generic: "Iets het skeefgeloop. Probeer asseblief weer.",
-    doneLive: "Dit is gepos!",
+    doneLive: "Dit is geplaas!",
     doneLiveSub: "Jou plasing is nou sigbaar vir Brandfort.",
     donePending: "Ingedien!",
     donePendingSub: "Ons keur dit gou goed, dan verskyn dit op die Bulletin.",
@@ -32,6 +32,12 @@ const UI = {
     another: "Plaas nog een",
     notFound: "Hierdie bladsy bestaan nie.",
     home: "Terug na die Bulletin",
+    gateTitle: "Teken in om te plaas",
+    gateNote: "Jy het 'n gratis rekening nodig om te plaas. Dit hou die Bulletin veilig vir almal.",
+    gateSignIn: "Teken in met Google",
+    profTitle: "Stoor eers jou profiel",
+    profNote: "Jy het 'n profiel nodig om te plaas. Dit vat net 'n minuut, en ons vul jou besonderhede dan vir jou in.",
+    profGo: "Maak my profiel klaar",
   },
   en: {
     back: "← Back",
@@ -52,6 +58,12 @@ const UI = {
     another: "Post another",
     notFound: "This page doesn't exist.",
     home: "Back to the Bulletin",
+    gateTitle: "Sign in to post",
+    gateNote: "You need a free account to post. It keeps the Bulletin safe for everyone.",
+    gateSignIn: "Sign in with Google",
+    profTitle: "Save your profile first",
+    profNote: "You need a profile to post. It only takes a minute, and then we fill in your details for you.",
+    profGo: "Set up my profile",
   },
 };
 
@@ -73,7 +85,10 @@ export default function CreatePage() {
   const form = FORMS[type] || BUSINESS_FORMS[type];
   const { lang } = useLang();
   const t = UI[lang];
-  const { user } = useAuth();
+  const { user, loading: authLoading, busy, signInWithGoogle } = useAuth();
+
+  // Saved profile (name and WhatsApp number). undefined = still loading, null = none saved yet
+  const [profile, setProfile] = useState(undefined);
 
   const [values, setValues] = useState({});
   const [photo, setPhoto] = useState(null);
@@ -109,6 +124,40 @@ export default function CreatePage() {
     setStatus("idle");
     setError("");
   }, [type, resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load the saved profile so forms can prefill name and WhatsApp number
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) {
+      setProfile(undefined);
+      return;
+    }
+    let active = true;
+    supabase
+      .from("profiles")
+      .select("display_name, whatsapp")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setProfile(data || null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  // The profile wins over what this phone remembers
+  useEffect(() => {
+    if (!form || !profile) return;
+    setValues((prev) => {
+      const next = { ...prev };
+      form.fields.forEach((f) => {
+        if (f.name === "name" && profile.display_name) next.name = profile.display_name;
+        if (f.name === "whatsapp" && profile.whatsapp) next.whatsapp = profile.whatsapp;
+      });
+      return next;
+    });
+  }, [profile, type, resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Suggest the signed-in person's first name when this phone doesn't know one yet
   const given = user?.user_metadata?.given_name || "";
@@ -240,6 +289,46 @@ export default function CreatePage() {
             {t.another}
           </button>
         </div>
+      </main>
+    );
+  }
+
+  // Posting needs an account with a saved profile
+  if (authLoading || (user && profile === undefined)) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-500">
+        ...
+      </main>
+    );
+  }
+  if (!user || !profile) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-950 px-6 text-center text-white">
+        <div className="text-5xl">{user ? "📝" : "🔐"}</div>
+        <h1 className="text-2xl font-black">{user ? t.profTitle : t.gateTitle}</h1>
+        <p className="max-w-xs text-sm text-neutral-400">
+          {user ? t.profNote : t.gateNote}
+        </p>
+        {user ? (
+          <Link
+            href="/profile"
+            className="rounded-xl bg-orange-500 px-6 py-3.5 text-base font-bold text-black transition hover:bg-orange-600"
+          >
+            {t.profGo}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={busy}
+            className="rounded-xl bg-orange-500 px-6 py-3.5 text-base font-bold text-black transition hover:bg-orange-600 disabled:opacity-50"
+          >
+            {t.gateSignIn}
+          </button>
+        )}
+        <Link href="/" className="text-sm text-neutral-500 hover:text-orange-400">
+          {t.home}
+        </Link>
       </main>
     );
   }

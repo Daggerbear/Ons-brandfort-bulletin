@@ -43,8 +43,8 @@ const text = {
     empty: "Nog niks hier nie.",
     more: "Wys meer",
     ctaTitle: "Is jy 'n plaaslike besigheid?",
-    ctaDesc: "Lys jou besigheid gratis en bereik die hele dorp.",
-    ctaButton: "Lys my besigheid",
+    ctaDesc: "Registreer jou besigheid gratis en bereik die hele dorp.",
+    ctaButton: "Registreer my besigheid",
   },
   en: {
     seo: "Businesses in Brandfort — Ons Brandfort Bulletin",
