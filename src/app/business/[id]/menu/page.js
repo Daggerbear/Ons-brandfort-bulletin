@@ -309,6 +309,24 @@ export default function BusinessMenuPage() {
     [items],
   );
 
+  const categoriesById = useMemo(
+    () => Object.fromEntries(categories.map((category) => [category.id, category])),
+    [categories],
+  );
+
+  // Name shown in the cart and the WhatsApp order. Adds the category so the shop
+  // can tell "Russians - Long" from "Fries - Large". Skipped for enquiry menus,
+  // and when the name already starts with / contains the category name.
+  const orderName = (item) => {
+    if (isEnquiry) return item.name;
+    const categoryName = categoriesById[item.category_id]?.name;
+    if (!categoryName) return item.name;
+    const name = item.name.toLowerCase();
+    const cat = categoryName.toLowerCase();
+    if (name.startsWith(cat) || name.includes(cat)) return item.name;
+    return `${categoryName} - ${item.name}`;
+  };
+
   const groupsByItem = useMemo(
     () =>
       optionGroups.reduce((all, group) => {
@@ -444,7 +462,7 @@ export default function BusinessMenuPage() {
       const unitPrice = itemUnitPrice(item);
       return isEnquiry
         ? `• ${item.name}${selected} — ${enquiryCopy.from} ${money(unitPrice)}`
-        : `• ${item.quantity} × ${item.name}${selected} — ${money(unitPrice * item.quantity)}`;
+        : `• ${item.quantity} × ${orderName(item)}${selected} — ${money(unitPrice * item.quantity)}`;
     });
 
     const typeLabel = orderType === "delivery" ? t.delivery : t.collection;
@@ -746,7 +764,7 @@ export default function BusinessMenuPage() {
                         >
                           <div className="min-w-0">
                             <p className="text-neutral-300">
-                              {item.quantity} × {item.name}
+                              {item.quantity} × {orderName(item)}
                             </p>
                             {choices && (
                               <p className="mt-0.5 text-xs text-orange-300">
