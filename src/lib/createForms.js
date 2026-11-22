@@ -13,6 +13,11 @@ const SHARE_CATS = [
   { value: "warning", icon: "⚠️", af: "Waarskuwing", en: "Warning" },
   { value: "birthday", icon: "🎂", af: "Verjaarsdag", en: "Birthday" },
   { value: "community", icon: "🏘️", af: "Gemeenskap", en: "Community" },
+  { value: "recipe", icon: "🍳", af: "Resep", en: "Recipe" },
+  { value: "video", icon: "🎬", af: "Video", en: "Video" },
+  { value: "photo", icon: "📸", af: "Foto's", en: "Photos" },
+  { value: "history", icon: "📜", af: "Dorpstorie", en: "Town story" },
+  { value: "other", icon: "💬", af: "Iets anders", en: "Something else" },
 ];
 
 const SELL_CATS = [
@@ -91,7 +96,7 @@ export const FORMS = {
     live: true,
     seeHref: "/",
     title: T("Deel iets met Brandfort", "Share with Brandfort"),
-    intro: T("Vra iets, deel nuus, of sê dankie.", "Ask something, share news, or say thanks."),
+    intro: T("Vra iets, deel 'n resep of video, of sê dankie.", "Ask something, share a recipe or video, or say thanks."),
     rules: T(
       "Nie vir besigheidsadvertensies nie. Wees vriendelik en gebruik jou regte naam.",
       "Not for business adverts. Be kind and use your real name."

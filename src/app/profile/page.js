@@ -55,6 +55,7 @@ const text = {
     retry: "Probeer weer",
     signOut: "Teken uit",
     back: "← Terug na die Bulletin",
+    myBusiness: "My Besigheid",
   },
   en: {
     title: "My Profile",
@@ -86,6 +87,7 @@ const text = {
     retry: "Try again",
     signOut: "Sign out",
     back: "← Back to the Bulletin",
+    myBusiness: "My Business",
   },
 };
 
@@ -115,6 +117,7 @@ export default function ProfilePage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null); // { type: "ok" | "error", text }
+  const [ownsBusiness, setOwnsBusiness] = useState(false);
 
   const userId = user?.id;
   const { hunter } = useHunter();
@@ -133,7 +136,8 @@ export default function ProfilePage() {
     Promise.all([
       supabase.from("profiles").select(COLUMNS).eq("id", userId).maybeSingle(),
       supabase.rpc("my_total_xp"),
-    ]).then(([profileResult, xpResult]) => {
+      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("owner_id", userId),
+    ]).then(([profileResult, xpResult, ownedResult]) => {
       if (!active) return;
       if (profileResult.error) {
         setStatus("failed");
@@ -146,6 +150,7 @@ export default function ProfilePage() {
       setGame(data?.favourite_game ?? "");
       setWhatsapp(data?.whatsapp ?? "");
       setTotalXp(xpResult.error ? 0 : Number(xpResult.data) || 0);
+      setOwnsBusiness((ownedResult.count ?? 0) > 0);
       setStatus("ready");
     });
     return () => {
@@ -271,6 +276,16 @@ export default function ProfilePage() {
             </div>
 
             <ProfileTabs lang={lang} />
+
+            {ownsBusiness && (
+              <Link
+                href="/my-business"
+                className="mt-3 flex items-center justify-between rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-300 transition hover:border-orange-500"
+              >
+                <span>🏪 {t.myBusiness}</span>
+                <span aria-hidden="true">›</span>
+              </Link>
+            )}
 
             <p className="mt-3 text-center text-xs text-neutral-500">
               ⚡ {t.private}

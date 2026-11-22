@@ -138,6 +138,36 @@ async function handlePost(request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (action === "update") {
+    const keywords = (Array.isArray(body.keywords) ? body.keywords : [])
+      .map((k) => clean(k, 40).toLowerCase())
+      .filter(Boolean)
+      .slice(0, 12);
+    const answer_af = clean(body.answer_af, 600);
+    if (!body.id || keywords.length === 0 || !answer_af) {
+      return NextResponse.json({ error: "Add at least one keyword and an Afrikaans answer." }, { status: 400 });
+    }
+    const link = safeLink(body.link);
+    if (clean(body.link, 300) && !link) {
+      return NextResponse.json({ error: "Link must start with / or https://" }, { status: 400 });
+    }
+    const { error } = await supabase
+      .from("bot_knowledge")
+      .update({
+        keywords,
+        answer_af,
+        answer_en: clean(body.answer_en, 600) || null,
+        link,
+        link_label_af: clean(body.link_label_af, 60) || null,
+        link_label_en: clean(body.link_label_en, 60) || null,
+        last_checked: new Date().toISOString().slice(0, 10),
+      })
+      .eq("id", body.id);
+    return error
+      ? NextResponse.json({ error: error.message }, { status: 500 })
+      : NextResponse.json({ ok: true });
+  }
+
   if (action === "handle") {
     const { error } = await supabase
       .from("bot_unanswered")

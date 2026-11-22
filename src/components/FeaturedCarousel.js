@@ -39,10 +39,12 @@ export default function FeaturedCarousel({ lang }) {
   }, [featured, index]);
 
   async function fetchFeatured() {
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabase
       .from("featured_businesses")
       .select("*, businesses(*)")
       .eq("active", true)
+      .or(`featured_until.is.null,featured_until.gt.${nowIso}`)
       .order("display_order", { ascending: true });
 
     if (!error) setFeatured(data);

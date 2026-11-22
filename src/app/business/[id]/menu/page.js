@@ -1,6 +1,8 @@
+// src/app/business/[id]/menu/page.js
 "use client";
 
 import { useLang } from "@/components/LangProvider";
+import { trackEvent } from "@/lib/analytics";
 import { useSuggestedName } from "@/lib/useSuggestedName";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -22,6 +24,8 @@ const labels = {
     itemsCount: "items",
     collection: "Afhaal",
     delivery: "Aflewering",
+    deliveryFee: "Afleweringsfooi",
+    subtotal: "Subtotaal",
     name: "Jou naam",
     namePlaceholder: "Tik jou naam hier",
     address: "Afleweringsadres",
@@ -49,6 +53,8 @@ const labels = {
     itemsCount: "items",
     collection: "Collection",
     delivery: "Delivery",
+    deliveryFee: "Delivery fee",
+    subtotal: "Subtotal",
     name: "Your name",
     namePlaceholder: "Enter your name",
     address: "Delivery address",
@@ -391,6 +397,12 @@ export default function BusinessMenuPage() {
     0,
   );
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // The restaurant's delivery fee is added automatically when the customer picks delivery
+  const deliveryFee =
+    !isEnquiry && orderType === "delivery"
+      ? Math.max(0, Number(settings?.delivery_fee) || 0)
+      : 0;
+  const grandTotal = total + deliveryFee;
 
   const setItemChoice = (itemId, groupId, valueId) => {
     setItemChoices((current) => ({
@@ -483,7 +495,10 @@ export default function BusinessMenuPage() {
           "",
           ...orderLines,
           "",
-          `*Total: ${money(total)}*`,
+          ...(deliveryFee > 0
+            ? [`Subtotal: ${money(total)}`, `Delivery fee: ${money(deliveryFee)}`]
+            : []),
+          `*Total: ${money(grandTotal)}*`,
           "",
           `Name: ${customerName.trim() || "Not provided"}`,
           `Order type: ${typeLabel}`,
@@ -495,12 +510,20 @@ export default function BusinessMenuPage() {
           "Please confirm my order and collection/delivery time. Thank you!",
         ];
 
+    trackEvent(isEnquiry ? "menu_enquiry" : "menu_order", { businessId: business?.id });
     window.open(
       `https://wa.me/${number}?text=${encodeURIComponent(message.join("\n"))}`,
       "_blank",
       "noopener,noreferrer",
     );
   };
+
+  // Count a scan when someone arrives from the business's QR code
+  useEffect(() => {
+    if (id && new URLSearchParams(window.location.search).get("src") === "qr") {
+      trackEvent("qr_scan", { businessId: Number(id) });
+    }
+  }, [id]);
 
   if (loading) {
     return (
@@ -741,7 +764,7 @@ export default function BusinessMenuPage() {
               <div className="flex items-center gap-3">
                 {!isEnquiry && (
                   <p className="text-xl font-black text-orange-400">
-                    {money(total)}
+                    {money(grandTotal)}
                   </p>
                 )}
                 <span className="text-orange-400 text-xl">
@@ -862,6 +885,18 @@ export default function BusinessMenuPage() {
                         : settings.collection_note}
                     </p>
                   )}
+                {!isEnquiry && deliveryFee > 0 && (
+                  <div className="mt-3 space-y-1 text-sm text-neutral-300">
+                    <div className="flex justify-between">
+                      <span>{t.subtotal}</span>
+                      <span>{money(total)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t.deliveryFee}</span>
+                      <span>{money(deliveryFee)}</span>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={placeOrder}
                   disabled={!cartItems.length}
@@ -869,7 +904,7 @@ export default function BusinessMenuPage() {
                 >
                   {isEnquiry
                     ? enquiryCopy.send
-                    : `${t.order} · ${money(total)}`}
+                    : `${t.order} · ${money(grandTotal)}`}
                 </button>
               </div>
             )}

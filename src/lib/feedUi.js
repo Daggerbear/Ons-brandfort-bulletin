@@ -10,7 +10,30 @@ export const categories = [
   { value: "recommendation", af: "Aanbeveling", en: "Recommendation" },
   { value: "warning", af: "Waarskuwing", en: "Warning" },
   { value: "community", af: "Gemeenskap", en: "Community" },
+  { value: "recipe", af: "Resep", en: "Recipe" },
+  { value: "video", af: "Video", en: "Video" },
+  { value: "photo", af: "Foto's", en: "Photos" },
+  { value: "history", af: "Dorpstorie", en: "Town story" },
+  { value: "other", af: "Iets anders", en: "Something else" },
 ];
+
+// One small icon per category, shown inside the category pill on every post
+export const CATEGORY_ICONS = {
+  question: "❓",
+  announcement: "📣",
+  lost: "🔍",
+  found: "🙌",
+  thank_you: "💜",
+  recommendation: "👍",
+  warning: "⚠️",
+  birthday: "🎂",
+  community: "🏘️",
+  recipe: "🍳",
+  video: "🎬",
+  photo: "📸",
+  history: "📜",
+  other: "💬",
+};
 
 // Each category gets its own identity: text/dot colour plus a coloured left edge on the card
 export const CATEGORY_STYLES = {
@@ -23,6 +46,11 @@ export const CATEGORY_STYLES = {
   recommendation: { text: "text-teal-400", dot: "bg-teal-400", border: "border-l-teal-400" },
   warning: { text: "text-amber-400", dot: "bg-amber-400", border: "border-l-amber-400" },
   community: { text: "text-green-400", dot: "bg-green-400", border: "border-l-green-400" },
+  recipe: { text: "text-lime-400", dot: "bg-lime-400", border: "border-l-lime-400" },
+  video: { text: "text-fuchsia-400", dot: "bg-fuchsia-400", border: "border-l-fuchsia-400" },
+  photo: { text: "text-cyan-400", dot: "bg-cyan-400", border: "border-l-cyan-400" },
+  history: { text: "text-indigo-400", dot: "bg-indigo-400", border: "border-l-indigo-400" },
+  other: { text: "text-neutral-400", dot: "bg-neutral-400", border: "border-l-neutral-500" },
 };
 
 const AVATAR_COLORS = [

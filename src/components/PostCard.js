@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import SafeImage from "@/components/SafeImage";
-import { categories, CATEGORY_STYLES, avatarColor, timeAgo } from "@/lib/feedUi";
+import { categories, CATEGORY_STYLES, CATEGORY_ICONS, avatarColor, timeAgo } from "@/lib/feedUi";
 
 function readList(key) {
   try {
@@ -12,6 +12,37 @@ function readList(key) {
   } catch {
     return [];
   }
+}
+
+// Video posts show a still picture with a play button, and only load YouTube when tapped.
+// That keeps every card the same size and keeps the feed fast.
+function VideoBox({ id, title, lang }) {
+  const [play, setPlay] = useState(false);
+  return (
+    <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-black">
+      {play ? (
+        <iframe
+          src={`https://www.youtube.com/embed/${id}?autoplay=1`}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="absolute inset-0 h-full w-full"
+        />
+      ) : (
+        <button
+          onClick={() => setPlay(true)}
+          aria-label={lang === "af" ? "Speel video" : "Play video"}
+          className="group absolute inset-0 h-full w-full"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/30 transition group-hover:bg-black/40">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 pl-1 text-2xl text-black shadow-[0_0_20px_rgba(249,115,22,0.5)]">▶</span>
+          </span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function PostCard({ post, lang = "af", comments = [], onComment }) {
@@ -31,8 +62,8 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
   const style = CATEGORY_STYLES[post.category];
   const author = post.name || "?";
   const body = post.content || "";
-  // Long posts fold to a few lines so one person can't fill the whole feed
-  const isLong = body.length > 220 || body.split("\n").length > 5;
+  // Long posts fold to 4 lines so every card stays about the same size
+  const isLong = body.length > 180 || body.split("\n").length > 4;
 
   useEffect(() => {
     setLiked(readList("likedPosts").includes(post.id));
@@ -121,30 +152,33 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{author}</p>
-          <div className="flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${style?.dot || "bg-green-400"}`} />
-            <span className={`text-xs ${style?.text || "text-green-400"}`}>
-              {categories.find((c) => c.value === post.category)?.[lang] || post.category}
-            </span>
-            <span className="text-xs text-neutral-600">·</span>
-            <span className="text-xs text-neutral-500">{timeAgo(post.created_at, lang)}</span>
-          </div>
+          <p className="text-xs text-neutral-500">{timeAgo(post.created_at, lang)}</p>
         </div>
+        <span
+          className={`flex-shrink-0 whitespace-nowrap rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1 text-[11px] font-semibold ${
+            style?.text || "text-green-400"
+          }`}
+        >
+          {CATEGORY_ICONS[post.category] || "💬"}{" "}
+          {categories.find((c) => c.value === post.category)?.[lang] || post.category}
+        </span>
         <button
           onClick={handleFlag}
           disabled={flagged}
-          className={`flex-shrink-0 text-[11px] transition ${
+          aria-label={lang === "af" ? "Rapporteer" : "Report"}
+          title={lang === "af" ? "Rapporteer" : "Report"}
+          className={`flex-shrink-0 text-sm transition ${
             flagged ? "text-red-500" : "text-neutral-600 hover:text-red-400"
           }`}
         >
-          🚩 {lang === "af" ? "Rapporteer" : "Report"}
+          🚩
         </button>
       </div>
 
       <p
         className={`whitespace-pre-line break-words leading-relaxed text-gray-200 ${
           isLong ? "mb-1" : "mb-3"
-        } ${isLong && !expanded ? "line-clamp-5" : ""}`}
+        } ${isLong && !expanded ? "line-clamp-4" : ""}`}
       >
         {body}
       </p>
@@ -160,26 +194,23 @@ export default function PostCard({ post, lang = "af", comments = [], onComment }
       )}
 
       {post.image_url && (
-        <SafeImage
-          src={post.image_url}
-          alt=""
-          width={800}
-          height={400}
-          className="mb-3 max-h-96 w-full rounded-xl object-cover"
-        />
+        <a
+          href={post.image_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 block overflow-hidden rounded-xl bg-neutral-950"
+        >
+          <SafeImage
+            src={post.image_url}
+            alt=""
+            width={800}
+            height={450}
+            className="aspect-video w-full object-cover"
+          />
+        </a>
       )}
 
-      {post.youtube_id && (
-        <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-black">
-          <iframe
-            src={`https://www.youtube.com/embed/${post.youtube_id}`}
-            title={author}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 h-full w-full"
-          />
-        </div>
-      )}
+      {post.youtube_id && <VideoBox id={post.youtube_id} title={author} lang={lang} />}
 
       <div className="grid grid-cols-3 gap-1 border-t border-neutral-800 pt-2">
         <button

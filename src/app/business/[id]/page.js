@@ -1,4 +1,4 @@
-// app/business/[id]/page.js
+// src/app/business/[id]/page.js
 "use client";
 import { useLang } from "@/components/LangProvider";
 import { useState, useEffect } from "react";
@@ -7,12 +7,11 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import SafeImage from "@/components/SafeImage";
-import BusinessReviews from "@/components/BusinessReviews";
-import BusinessUpdates from "@/components/BusinessUpdates";
 import { trackEvent } from "@/lib/analytics";
 import { SkeletonBusinessDetail } from "@/components/Skeleton";
 import { getCategoryByName } from "@/lib/categories";
+import BusinessLayout from "@/components/biz/templates";
+import { DEFAULT_SCHEME, DEFAULT_TEMPLATE, safeScheme, safeTemplate, themeStyle } from "@/lib/bizTheme";
 
 // Finds the first SA phone number in free text; returns digits like 27710978901
 function extractNumber(contact) {
@@ -78,12 +77,13 @@ export default function BusinessDetail() {
   const [reviews, setReviews] = useState([]);
   const [updates, setUpdates] = useState([]);
   const [sisterBusinesses, setSisterBusinesses] = useState([]);
+  const [look, setLook] = useState({ template: DEFAULT_TEMPLATE, theme: DEFAULT_SCHEME });
 
   const t = text[lang];
 
   useEffect(() => {
     const fetchBusiness = async () => {
-      const [businessResult, menuResult, updatesResult] = await Promise.all([
+      const [businessResult, menuResult, updatesResult, lookResult] = await Promise.all([
         supabase.from("businesses").select("*").eq("id", id).maybeSingle(),
         supabase
           .from("business_menu_settings")
@@ -97,13 +97,23 @@ export default function BusinessDetail() {
           .eq("Status", "approved")
           .order("created_at", { ascending: false })
           .limit(3),
+        // The paid page look. If the plan has lapsed (or the SQL piece is not run yet) this is the free default.
+        supabase.rpc("business_look", { p_business_id: Number(id) }),
       ]);
 
       const biz = businessResult.data;
       setBusiness(biz || null);
 
+      const row = Array.isArray(lookResult.data) ? lookResult.data[0] : lookResult.data;
+      if (row && !lookResult.error) {
+        setLook({ template: safeTemplate(row.page_template), theme: safeScheme(row.page_theme) });
+      }
+
       if (biz) {
         trackEvent("business_view", { businessId: biz.id });
+        if (new URLSearchParams(window.location.search).get("src") === "qr") {
+          trackEvent("qr_scan", { businessId: biz.id });
+        }
 
         if (biz.sister_group) {
           const { data: sisters } = await supabase
@@ -164,239 +174,53 @@ export default function BusinessDetail() {
     );
   }
 
-  const cat = getCategoryByName(business.category);
-  const categoryIcon = cat?.icon || "🏪";
-  const categoryLabel = cat ? cat[lang] : business.category;
-  const categorySlug = cat?.slug || "all";
+  const found = getCategoryByName(business.category);
+  const cat = {
+    icon: found?.icon || "🏪",
+    label: found ? found[lang] : business.category,
+    slug: found?.slug || "all",
+  };
 
   const digits = extractNumber(business.contact);
-  const whatsappLink = digits
-    ? `https://wa.me/${digits}?text=${encodeURIComponent(t.waMessage)}`
-    : null;
-  const callLink = digits ? `tel:+${digits}` : null;
-  const websiteLink = getWebsiteLink(business.website);
-
-  const mapsLink = business.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        `${business.address}, Brandfort, South Africa`
-      )}`
-    : null;
+  const links = {
+    whatsapp: digits ? `https://wa.me/${digits}?text=${encodeURIComponent(t.waMessage)}` : null,
+    call: digits ? `tel:+${digits}` : null,
+    website: getWebsiteLink(business.website),
+    maps: business.address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${business.address}, Brandfort, South Africa`
+        )}`
+      : null,
+  };
 
   // Clean URL + UTM so shares show up under UTM Parameters in Vercel Analytics
   const shareUrl = `https://ons-brandfort-bulletin.vercel.app/business/${id}?utm_source=whatsapp&utm_medium=share`;
   const shareDesc = business.category || business.description?.slice(0, 60) || "";
-  const shareLink = `https://wa.me/?text=${encodeURIComponent(
-    t.shareMessage(business.name, shareDesc, shareUrl)
-  )}`;
+  links.share = `https://wa.me/?text=${encodeURIComponent(t.shareMessage(business.name, shareDesc, shareUrl))}`;
+
+  const ctx = {
+    business,
+    id,
+    lang,
+    t,
+    cat,
+    rating: { avg: averageRating, count: reviews.length },
+    links,
+    menuEnabled,
+    updates,
+    reviews,
+    sisters: sisterBusinesses,
+    fetchReviews,
+    track: (type) => trackEvent(type, { businessId: business.id }),
+  };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
+    <main
+      className="min-h-screen flex flex-col"
+      style={{ ...themeStyle(look.theme), background: "var(--bz-bg)", color: "var(--bz-text)" }}
+    >
       <Nav lang={lang} />
-
-      {/* Hero header */}
-      <header
-        className="border-b border-orange-900/60 px-6 pt-5 pb-7"
-        style={{ background: "radial-gradient(circle at 20% 0%, #7c2d12, #0a0a0a 75%)" }}
-      >
-        <div className="max-w-lg mx-auto">
-          <div className="flex justify-between items-center mb-5">
-            <Link
-              href={`/besighede/${categorySlug}`}
-              className="text-sm text-orange-400 hover:text-orange-300"
-            >
-              ← {t.back}
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <SafeImage
-              src={business.logo_url}
-              alt={`${business.name} logo`}
-              width={88}
-              height={88}
-              priority
-              className="w-[88px] h-[88px] object-cover rounded-2xl border-2 border-orange-500/40 flex-shrink-0"
-              fallback={
-                <div className="w-[88px] h-[88px] rounded-2xl border-2 border-orange-500/40 bg-neutral-900 flex items-center justify-center text-4xl flex-shrink-0">
-                  {categoryIcon}
-                </div>
-              }
-            />
-            <div className="min-w-0">
-              <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-orange-400 border border-orange-500/40 rounded-full px-3 py-1 mb-2">
-                {categoryIcon} {categoryLabel}
-              </span>
-              <h1 className="text-2xl font-bold leading-tight break-words">{business.name}</h1>
-              {averageRating && (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-yellow-400 text-sm">
-                    {"★".repeat(Math.round(averageRating))}
-                    {"☆".repeat(5 - Math.round(averageRating))}
-                  </span>
-                  <span className="text-neutral-400 text-xs">
-                    {averageRating} ({reviews.length})
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-lg mx-auto px-6 py-8 w-full flex-1">
-        {/* Action bar */}
-        <div className="space-y-3 mb-8">
-          {whatsappLink && (
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 transition text-white font-semibold rounded-lg px-4 py-3"
-            >
-              💬 {t.whatsapp}
-            </a>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            {callLink && (
-              <a
-                href={callLink}
-                className="last:odd:col-span-2 text-center border-2 border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white transition font-semibold rounded-lg px-4 py-3"
-              >
-                📞 {t.call}
-              </a>
-            )}
-            {menuEnabled && (
-              <a
-                href={`/business/${business.id}/menu`}
-                className="last:odd:col-span-2 text-center bg-orange-500 hover:bg-orange-600 transition text-white font-semibold rounded-lg px-4 py-3"
-              >
-                📋 {t.menu}
-              </a>
-            )}
-            {websiteLink && (
-              <a
-                href={websiteLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="last:odd:col-span-2 text-center bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition text-white font-semibold rounded-lg px-4 py-3"
-              >
-                🌐 {t.website}
-              </a>
-            )}
-          </div>
-          <a
-            href={shareLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent("business_share", { businessId: business.id })}
-            className="flex items-center justify-center gap-2 w-full border border-green-600/60 text-green-400 hover:bg-green-600 hover:text-white transition font-semibold rounded-lg px-4 py-3"
-          >
-            📤 {t.share}
-          </a>
-        </div>
-
-        <p className="text-neutral-300 mb-6 leading-relaxed whitespace-pre-line break-words">
-          {business.description}
-        </p>
-
-        {/* Services */}
-        {business.services?.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-400 mb-3">
-              🛠️ {t.services}
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {business.services.map((s) => (
-                <span
-                  key={s}
-                  className="text-sm bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full px-3 py-1 capitalize"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sister Businesses */}
-        {sisterBusinesses.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-400 mb-3">
-              👥 {t.sisterBusinesses}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {sisterBusinesses.map((sister) => {
-                const sCat = getCategoryByName(sister.category);
-                return (
-                  <Link
-                    key={sister.id}
-                    href={`/business/${sister.id}`}
-                    className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 hover:border-orange-500 transition rounded-xl p-3"
-                  >
-                    <SafeImage
-                      src={sister.logo_url}
-                      alt={sister.name}
-                      width={44}
-                      height={44}
-                      className="w-11 h-11 object-cover rounded-lg flex-shrink-0"
-                      fallback={
-                        <div className="w-11 h-11 rounded-lg bg-neutral-800 flex items-center justify-center text-xl flex-shrink-0">
-                          {sCat?.icon || "🏪"}
-                        </div>
-                      }
-                    />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{sister.name}</p>
-                      <p className="text-xs text-neutral-500 truncate">
-                        {sCat ? sCat[lang] : sister.category}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Info chips */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          {business.address && (
-            <a
-              href={mapsLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-neutral-900 border border-neutral-800 hover:border-orange-500 transition rounded-xl p-3 col-span-2"
-            >
-              <p className="text-xs text-neutral-500 uppercase mb-1">📍 {t.address}</p>
-              <p className="text-white text-sm">{business.address}</p>
-              <p className="text-xs text-orange-400 mt-1">{t.openMaps}</p>
-            </a>
-          )}
-          {business.hours && (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3">
-              <p className="text-xs text-neutral-500 uppercase mb-1">🕒 {t.hours}</p>
-              <p className="text-white text-sm">{business.hours}</p>
-            </div>
-          )}
-          {business.contact && (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3">
-              <p className="text-xs text-neutral-500 uppercase mb-1">📞 {t.contact}</p>
-              <p className="text-white text-sm break-words">{business.contact}</p>
-            </div>
-          )}
-        </div>
-
-        <BusinessUpdates updates={updates} lang={lang} />
-
-        <BusinessReviews
-          businessId={id}
-          reviews={reviews}
-          lang={lang}
-          onPosted={fetchReviews}
-        />
-
-      </div>
-
+      <BusinessLayout template={look.template} ctx={ctx} />
       <Footer lang={lang} />
     </main>
   );

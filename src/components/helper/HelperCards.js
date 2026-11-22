@@ -1,4 +1,5 @@
 // src/components/helper/HelperCards.js
+// The cards Lientjie shows inside the chat: businesses, events and menu items.
 "use client";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
@@ -9,105 +10,146 @@ import {
   money,
   whatsappNumber,
 } from "@/components/helper/helperData";
+import { openStatus } from "@/lib/bot/botHours";
+
+const WORDS = {
+  af: { open: "Nou oop", closed: "Toe", always: "24 uur oop", until: (t) => `tot ${t}`, page: "🏪 Bladsy" },
+  en: { open: "Open now", closed: "Closed", always: "Open 24h", until: (t) => `until ${t}`, page: "🏪 Page" },
+};
+
+// A small green / grey pill that says whether the business is open right now
+function StatusBadge({ hours, lang }) {
+  if (!hours || !String(hours).trim()) return null;
+  const st = openStatus(hours);
+  if (!st.known) return null;
+  const w = WORDS[lang] || WORDS.af;
+  if (st.open) {
+    return (
+      <span
+        title={st.closesAt ? w.until(st.closesAt) : undefined}
+        className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-green-500/15 px-2.5 py-1 text-[11px] font-semibold text-green-300"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+        {st.always ? w.always : w.open}
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-neutral-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
+      {w.closed}
+    </span>
+  );
+}
+
+const glass = "rounded-2xl border border-white/10 bg-white/[0.05]";
 
 export function EventCard({ e, onNavigate }) {
   return (
     <Link
       href={eventHref(e.id)}
       onClick={onNavigate}
-      className="block bg-neutral-900 border border-neutral-800 rounded-xl p-3 hover:border-orange-500 transition"
+      className={`${glass} block border-l-[3px] border-l-orange-500 p-3 transition hover:border-orange-500/60`}
     >
-      <h3 className="text-sm font-semibold text-orange-400">{e.title}</h3>
+      <h3 className="text-[15px] font-semibold leading-snug text-white">{e.title}</h3>
       {(e.date || e.time) && (
-        <p className="text-xs text-neutral-300 mt-0.5">
-          📅 {[e.date, e.time].filter(Boolean).join(" · ")}
-        </p>
+        <p className="mt-1 text-[13px] text-orange-300">📅 {[e.date, e.time].filter(Boolean).join(" · ")}</p>
       )}
-      {e.location && <p className="text-xs text-neutral-400 mt-0.5">📍 {e.location}</p>}
+      {e.location && <p className="mt-0.5 text-[13px] text-neutral-400">📍 {e.location}</p>}
     </Link>
   );
 }
 
-export function BusinessCard({ b, menuMode, t, onNavigate }) {
+export function BusinessCard({ b, menuMode, t, lang = "af", onNavigate }) {
+  const w = WORDS[lang] || WORDS.af;
   const wa = whatsappNumber(b.contact);
   const digits = (b.contact || "").replace(/[^\d+]/g, "");
   const canCall = !wa && digits.length >= 7;
+  const hours = b.hours && String(b.hours).trim();
+
+  const btn =
+    "flex-1 whitespace-nowrap rounded-xl px-3 py-2.5 text-center text-[13px] font-semibold transition";
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3">
-      <Link
-        href={businessHref(b.id)}
-        onClick={onNavigate}
-        className="flex gap-3 hover:opacity-90 transition"
-      >
-        <SafeImage
-          src={b.logo_url}
-          alt={`${b.name} logo`}
-          width={40}
-          height={40}
-          className="w-10 h-10 object-cover rounded-lg border border-neutral-800 flex-shrink-0"
-          fallback={
-            <div className="w-10 h-10 rounded-lg border border-neutral-800 bg-neutral-800 flex-shrink-0" />
-          }
-        />
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-orange-400">{b.name}</h3>
-          <p className="text-xs text-neutral-400">{b.category}</p>
-          {b.services?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {b.services.slice(0, 3).map((s) => (
-                <span
-                  key={s}
-                  className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full px-2 py-0.5"
-                >
-                  {s}
-                </span>
-              ))}
+    <div className={`${glass} overflow-hidden`}>
+      <Link href={businessHref(b.id)} onClick={onNavigate} className="block p-3 transition hover:bg-white/[0.04]">
+        <div className="flex items-start gap-3">
+          <SafeImage
+            src={b.logo_url}
+            alt={`${b.name} logo`}
+            width={48}
+            height={48}
+            className="h-12 w-12 flex-shrink-0 rounded-xl border border-white/10 object-cover"
+            fallback={
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-xl">
+                🏪
+              </div>
+            }
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="min-w-0 text-[15px] font-bold leading-snug text-white">{b.name}</h3>
+              <StatusBadge hours={b.hours} lang={lang} />
             </div>
-          )}
-          {b.hours && String(b.hours).trim() && (
-            <p className="text-xs text-neutral-300 mt-1.5 whitespace-pre-line">
-              🕒 {String(b.hours).trim().slice(0, 160)}
-            </p>
-          )}
-          {b.address && (
-            <p className="text-xs text-neutral-400 mt-0.5">📍 {String(b.address).slice(0, 90)}</p>
-          )}
-          {b.contact && <p className="text-xs text-neutral-400 mt-0.5">📞 {b.contact}</p>}
+            <p className="mt-0.5 text-[12px] text-neutral-400">{b.category}</p>
+          </div>
+        </div>
+
+        {b.services?.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {b.services.slice(0, 3).map((s) => (
+              <span
+                key={s}
+                className="rounded-full border border-orange-500/25 bg-orange-500/10 px-2.5 py-0.5 text-[11px] text-orange-300"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-2.5 space-y-1 text-[13px] text-neutral-300">
+          {hours && <p className="whitespace-pre-line">🕒 {hours.slice(0, 120)}</p>}
+          {b.address && <p className="text-neutral-400">📍 {String(b.address).slice(0, 90)}</p>}
+          {b.contact && <p className="text-neutral-400">📞 {b.contact}</p>}
         </div>
       </Link>
 
-      {(menuMode || wa || canCall) && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {menuMode && (
-            <Link
-              href={menuHref(b.id)}
-              onClick={onNavigate}
-              className="text-xs font-semibold bg-orange-500 hover:bg-orange-600 transition text-black rounded-full px-3.5 py-1.5"
-            >
-              {menuMode === "enquiry" ? t.servicesBtn : t.menuBtn}
-            </Link>
-          )}
-          {wa && (
-            <a
-              href={`https://wa.me/${wa}?text=${encodeURIComponent(t.waGreet(b.name))}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold bg-green-600 hover:bg-green-700 transition text-white rounded-full px-3.5 py-1.5"
-            >
-              {t.waBtn}
-            </a>
-          )}
-          {canCall && (
-            <a
-              href={`tel:${digits}`}
-              className="text-xs font-semibold border border-neutral-700 hover:border-orange-500 transition text-neutral-200 rounded-full px-3.5 py-1.5"
-            >
-              {t.callBtn}
-            </a>
-          )}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2 border-t border-white/10 bg-black/20 p-2.5">
+        {menuMode && (
+          <Link
+            href={menuHref(b.id)}
+            onClick={onNavigate}
+            className={`${btn} bg-orange-500 text-black hover:bg-orange-400`}
+          >
+            {menuMode === "enquiry" ? t.servicesBtn : t.menuBtn}
+          </Link>
+        )}
+        {wa && (
+          <a
+            href={`https://wa.me/${wa}?text=${encodeURIComponent(t.waGreet(b.name))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${btn} bg-green-600 text-white hover:bg-green-500`}
+          >
+            {t.waBtn}
+          </a>
+        )}
+        {canCall && (
+          <a href={`tel:${digits}`} className={`${btn} border border-white/15 bg-white/10 text-white hover:bg-white/15`}>
+            {t.callBtn}
+          </a>
+        )}
+        {!menuMode && !wa && !canCall && (
+          <Link
+            href={businessHref(b.id)}
+            onClick={onNavigate}
+            className={`${btn} border border-white/15 bg-white/10 text-white hover:bg-white/15`}
+          >
+            {w.page}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
@@ -117,13 +159,15 @@ export function MenuHitRow({ h, onNavigate }) {
     <Link
       href={menuHref(h.business_id)}
       onClick={onNavigate}
-      className="flex items-center justify-between gap-3 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm hover:border-orange-500 transition"
+      className={`${glass} flex items-center justify-between gap-3 px-3 py-2.5 text-sm transition hover:border-orange-500/60`}
     >
-      <span className="text-neutral-200 min-w-0">
+      <span className="min-w-0 text-neutral-200">
         🍽️ {h.name}
         <span className="text-neutral-500"> · {h.businessName}</span>
       </span>
-      <span className="text-orange-400 font-semibold flex-shrink-0">{money(h.price)}</span>
+      <span className="flex-shrink-0 rounded-full bg-orange-500/15 px-2.5 py-0.5 text-[13px] font-bold text-orange-300">
+        {money(h.price)}
+      </span>
     </Link>
   );
 }
