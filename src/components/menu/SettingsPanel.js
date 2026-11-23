@@ -74,6 +74,53 @@ export default function SettingsPanel({ t, settings, setSettings, onSave, saving
         />
       </div>
 
+      <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/5 p-4">
+        <h3 className="text-base font-bold text-green-300">🎉 {t.discountTitle}</h3>
+        <p className="mt-1 text-xs text-neutral-400">{t.discountHelp}</p>
+        <div className="mt-3">
+          <Toggle
+            label={t.discountToggle}
+            checked={!!settings.discount_enabled}
+            onChange={set("discount_enabled")}
+          />
+        </div>
+        {settings.discount_enabled && (
+          <div className="mt-3 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label={t.discountPercent}
+                value={settings.discount_percent ?? ""}
+                onChange={set("discount_percent")}
+                inputMode="decimal"
+                placeholder={t.discountPercentPh}
+              />
+              <Field
+                label={t.discountMin}
+                value={settings.discount_min_order ?? ""}
+                onChange={set("discount_min_order")}
+                inputMode="decimal"
+                placeholder={t.discountMinPh}
+              />
+            </div>
+            <Field
+              label={t.discountEnds}
+              type="date"
+              value={settings.discount_ends_on ?? ""}
+              onChange={set("discount_ends_on")}
+            />
+            <TextArea
+              label={t.discountNote}
+              value={settings.discount_note || ""}
+              onChange={set("discount_note")}
+              placeholder={t.discountNotePh}
+            />
+            <p className="rounded-lg bg-neutral-800 px-3 py-2 text-xs text-neutral-300">
+              {t.discountPreview(settings.discount_percent, settings.discount_min_order)}
+            </p>
+          </div>
+        )}
+      </div>
+
       <PrimaryButton type="button" onClick={onSave} disabled={saving} className="mt-4">
         {saving ? t.savingSettings : t.saveSettings}
       </PrimaryButton>

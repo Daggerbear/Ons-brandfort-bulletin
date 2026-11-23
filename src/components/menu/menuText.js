@@ -130,6 +130,24 @@ const af = {
   deliveryNote: "Afleweringnota",
   deliveryNotePh: "Waarheen lewer julle en teen watter koste?",
   saveSettings: "Stoor instellings",
+  discountTitle: "Bulletin-afslag",
+  discountHelp:
+    "Gee kliënte wat deur die Bulletin bestel 'n afslag. Dit word outomaties van hul bestelling afgetrek en in die WhatsApp-boodskap gewys. Jy dra die koste self.",
+  discountToggle: "Afslag aan",
+  discountPercent: "Afslag (%)",
+  discountPercentPh: "10",
+  discountMin: "Minimum bestelling (opsioneel)",
+  discountMinPh: "bv. 100",
+  discountEnds: "Geldig tot (opsioneel)",
+  discountNote: "Jou eie bepalings (opsioneel)",
+  discountNotePh: "bv. Geld nie op spesiale aanbiedings nie.",
+  discountBadPct: "Die afslag moet tussen 1 en 90 wees.",
+  discountPreview: (pct, min) =>
+    `Kliënte sien: ${pct || "…"}% afslag as hulle deur die Bulletin bestel${min ? `, vir bestellings van R${min} of meer` : ""}. Die standaard bepalings word onder jou katalogus gewys.`,
+  quickLabel: "Voeg vinnig by:",
+  quickGroups: ["Grootte", "Geur", "Sous"],
+  choicesExample:
+    "Voorbeeld, 'n melkskommel: een keuse \"Grootte\" (300ml, 500ml | 10) en nog een keuse \"Geur\" (Aarbei, Sjokolade). Die kliënt kies dan albei.",
   savingSettings: "Stoor...",
   settingsSaved: "Instellings gestoor",
 };
@@ -263,6 +281,24 @@ const en = {
   deliveryNote: "Delivery note",
   deliveryNotePh: "Where do you deliver and at what cost?",
   saveSettings: "Save settings",
+  discountTitle: "Bulletin discount",
+  discountHelp:
+    "Give customers who order through the Bulletin a discount. It is taken off their order automatically and shown in the WhatsApp message. You carry the cost yourself.",
+  discountToggle: "Discount on",
+  discountPercent: "Discount (%)",
+  discountPercentPh: "10",
+  discountMin: "Minimum order (optional)",
+  discountMinPh: "e.g. 100",
+  discountEnds: "Valid until (optional)",
+  discountNote: "Your own terms (optional)",
+  discountNotePh: "e.g. Not valid on specials.",
+  discountBadPct: "The discount must be between 1 and 90.",
+  discountPreview: (pct, min) =>
+    `Customers see: ${pct || "…"}% off when they order through the Bulletin${min ? `, for orders of R${min} or more` : ""}. The standard terms are shown under your catalogue.`,
+  quickLabel: "Quick add:",
+  quickGroups: ["Size", "Flavour", "Sauce"],
+  choicesExample:
+    "Example, a milkshake: one choice \"Size\" (300ml, 500ml | 10) and another choice \"Flavour\" (Strawberry, Chocolate). The customer then picks both.",
   savingSettings: "Saving...",
   settingsSaved: "Settings saved",
 };

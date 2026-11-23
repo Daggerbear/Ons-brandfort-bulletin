@@ -5,12 +5,12 @@ import { parseValues } from "./menuHelpers";
 
 export function makeChoiceApi({ t, flash, groups, values, groupsByItem, items, setGroups, setValues, fetchOptions }) {
   return {
-    addGroup: async (itemId) => {
+    addGroup: async (itemId, name) => {
       const { data, error } = await supabase
         .from("menu_item_option_groups")
         .insert({
           menu_item_id: itemId,
-          name: t.newGroupName,
+          name: name || t.newGroupName,
           selection_type: "single",
           is_required: true,
           sort_order: (groupsByItem[itemId] || []).length + 1,

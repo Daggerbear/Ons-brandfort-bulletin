@@ -43,12 +43,13 @@ export default function ChoicesPanel({ item, groups, values, siblingItems, t, ap
     });
 
   return (
-    <details className="rounded-lg border border-neutral-700 bg-neutral-950/60 p-3" open={groups.length > 0}>
+    <details className="rounded-lg border border-neutral-700 bg-neutral-950/60 p-3" open>
       <summary className="cursor-pointer text-sm font-semibold text-orange-300">
         {t.choicesTitle}
         {groups.length > 0 && <span className="ml-2 text-neutral-500">({groups.length})</span>}
       </summary>
       <p className="mt-2 text-xs text-neutral-500">{t.choicesHelp}</p>
+      <p className="mt-1 text-xs text-neutral-500">{t.choicesExample}</p>
 
       <div className="mt-3 space-y-4">
         {groups.map((group) => {
@@ -160,6 +161,20 @@ export default function ChoicesPanel({ item, groups, values, siblingItems, t, ap
       {others.length === 0 && groups.length > 0 && (
         <p className="mt-2 text-xs text-neutral-600">{t.noOthers}</p>
       )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-neutral-500">{t.quickLabel}</span>
+        {(t.quickGroups || []).map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => api.addGroup(item.id, name)}
+            className="rounded-full border border-orange-500/50 px-3 py-1 text-xs font-semibold text-orange-300 hover:bg-orange-500/10"
+          >
+            + {name}
+          </button>
+        ))}
+      </div>
 
       <button
         type="button"

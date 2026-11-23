@@ -17,6 +17,11 @@ const DEFAULT_SETTINGS = (id) => ({
   delivery_note: "",
   menu_mode: "order",
   delivery_fee: 0,
+  discount_enabled: false,
+  discount_percent: "",
+  discount_min_order: "",
+  discount_ends_on: "",
+  discount_note: "",
 });
 
 const EMPTY_NEW = { name: "", price: "", category_id: "", description: "" };
@@ -328,6 +333,8 @@ export default function useMenuData(id, t) {
   // ---------- settings -------------------------------------------------------
   const saveSettings = async () => {
     if (!settings) return;
+    const pct = Number(String(settings.discount_percent ?? "").replace(",", "."));
+    if (settings.discount_enabled && !(pct >= 1 && pct <= 90)) return flash(t.discountBadPct, "error");
     setSavingSettings(true);
     const { error } = await supabase.from("business_menu_settings").upsert(
       {
@@ -341,6 +348,11 @@ export default function useMenuData(id, t) {
         delivery_note: settings.delivery_note?.trim() || null,
         menu_mode: settings.menu_mode || "order",
         delivery_fee: parsePrice(settings.delivery_fee) ?? 0,
+        discount_enabled: !!settings.discount_enabled,
+        discount_percent: pct > 0 ? Math.min(90, Math.round(pct * 100) / 100) : null,
+        discount_min_order: parsePrice(settings.discount_min_order) || null,
+        discount_ends_on: settings.discount_ends_on || null,
+        discount_note: (settings.discount_note || "").trim().slice(0, 300) || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "business_id" },

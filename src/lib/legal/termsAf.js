@@ -122,6 +122,19 @@ export const TERMS_AF = {
       ],
     },
     {
+      id: "promos",
+      h: "Promosies en afslag",
+      short: "Afslag",
+      p: [
+        "'n Besigheid kan 'n Bulletin-afslag aanskakel: 'n persentasie wat van die totaal van die items afgetrek word wanneer 'n kliënt deur die Bulletin bestel. Die besigheid kies die persentasie, enige minimum bestelling en enige einddatum, en kan sy eie ekstra bepalings byvoeg. Dit word aan kliënte op die besigheid se katalogus gewys.",
+        "Die afslag word deur die besigheid aangebied en betaal, nie deur die Bulletin nie. Die Bulletin wys dit net en voeg die afslaglyn by die bestelboodskap. Die besigheid bevestig die finale bedrag wanneer hy die bestelling aanvaar en mag 'n bestelling weier wat nie aan sy bepalings voldoen nie.",
+        "Die afslag word van die totaal van die items afgetrek, nie van die afleweringsfooi nie. Daar is een afslag per bestelling, en dit kan nie met ander spesiale aanbiedings gekombineer word nie, tensy die besigheid dit sê.",
+        "'n Besigheid kan 'n afslag enige tyd verander of beëindig. 'n Verandering raak nie 'n bestelling wat die besigheid reeds bevestig het nie.",
+        "'n Besigheid moet 'n afslag nakom wat hy aan kliënte wys en mag nie 'n afslag wys wat hy nie gee nie. Ons kan 'n afslag verwyder wat misleidend is.",
+        "Kliënte: die afslag geld net vir bestellings wat deur die bestelknoppie op die Bulletin geplaas word. Bevestig pryse en die afslag altyd by die besigheid.",
+      ],
+    },
+    {
       id: "posts",
       h: "Besigheidsplasings, logo's en bladsystyl",
       short: "Plasings & logo's",

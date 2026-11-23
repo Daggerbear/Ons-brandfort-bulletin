@@ -122,6 +122,19 @@ export const TERMS_EN = {
       ],
     },
     {
+      id: "promos",
+      h: "Promotions and discounts",
+      short: "Discounts",
+      p: [
+        "A business can switch on a Bulletin discount: a percentage taken off the total of the items when a customer orders through the Bulletin. The business chooses the percentage, any minimum order and any end date, and can add its own extra terms. These are shown to customers on the business’s catalogue.",
+        "The discount is offered and paid for by the business, not by the Bulletin. The Bulletin only shows it and adds the discount line to the order message. The business confirms the final amount when it accepts the order and may decline an order that does not meet its terms.",
+        "The discount is taken off the total of the items, not the delivery fee. There is one discount per order, and it cannot be combined with other specials unless the business says so.",
+        "A business may change or end a discount at any time. A change does not affect an order the business has already confirmed.",
+        "A business must honour a discount it shows to customers and must not show a discount it does not give. We may remove a discount that is misleading.",
+        "Customers: the discount only applies to orders placed through the order button on the Bulletin. Prices and the discount must always be confirmed with the business.",
+      ],
+    },
+    {
       id: "posts",
       h: "Business posts, logos and page style",
       short: "Posts & logos",

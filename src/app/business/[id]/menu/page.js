@@ -72,6 +72,48 @@ const labels = {
   },
 };
 
+// The Bulletin discount: wording and terms shown to customers
+const fmtDate = (d, lang) => {
+  const date = new Date(`${d}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? d
+    : date.toLocaleDateString(lang === "af" ? "af-ZA" : "en-ZA", { day: "numeric", month: "long", year: "numeric" });
+};
+const PROMO = {
+  af: {
+    banner: (pct) => `${pct}% afslag as jy deur die Bulletin bestel`,
+    minLine: (min) => `Bestel vir ${min} of meer om die afslag te kry.`,
+    hint: (min) => `Bestel vir ${min} of meer om jou Bulletin-afslag te kry.`,
+    line: (pct) => `Bulletin-afslag (${pct}%)`,
+    termsTitle: "Bepalings van die afslag",
+    terms: ({ name, pct, min, ends, custom }) => [
+      "Die afslag geld net as jy jou bestelling deur die Ons Brandfort Bulletin plaas.",
+      `Die ${pct}% word van die totaal van jou items afgetrek, nie van die afleweringsfooi nie.`,
+      ...(min ? [`Minimum bestelling: ${min}.`] : []),
+      ...(ends ? [`Geldig tot ${ends}.`] : []),
+      "Een afslag per bestelling. Dit kan nie met ander spesiale aanbiedings gekombineer word nie.",
+      `Die afslag word deur ${name} aangebied. ${name} kan dit enige tyd verander of beëindig en bevestig jou finale bedrag wanneer die bestelling aanvaar word.`,
+      ...(custom ? [custom] : []),
+    ],
+  },
+  en: {
+    banner: (pct) => `${pct}% off when you order through the Bulletin`,
+    minLine: (min) => `Order ${min} or more to get the discount.`,
+    hint: (min) => `Order ${min} or more to get your Bulletin discount.`,
+    line: (pct) => `Bulletin discount (${pct}%)`,
+    termsTitle: "Discount terms",
+    terms: ({ name, pct, min, ends, custom }) => [
+      "The discount only applies when you place your order through Ons Brandfort Bulletin.",
+      `The ${pct}% is taken off the total of your items, not the delivery fee.`,
+      ...(min ? [`Minimum order: ${min}.`] : []),
+      ...(ends ? [`Valid until ${ends}.`] : []),
+      "One discount per order. It cannot be combined with other specials.",
+      `The discount is offered by ${name}. ${name} can change or end it at any time and confirms your final amount when the order is accepted.`,
+      ...(custom ? [custom] : []),
+    ],
+  },
+};
+
 export default function BusinessMenuPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
@@ -82,6 +124,7 @@ export default function BusinessMenuPage() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [optionGroups, setOptionGroups] = useState([]);
+  const [placing, setPlacing] = useState(false);
   const [optionValues, setOptionValues] = useState([]);
   const [itemChoices, setItemChoices] = useState({});
   const [loading, setLoading] = useState(true);
@@ -402,7 +445,28 @@ export default function BusinessMenuPage() {
     !isEnquiry && orderType === "delivery"
       ? Math.max(0, Number(settings?.delivery_fee) || 0)
       : 0;
-  const grandTotal = total + deliveryFee;
+  // Bulletin discount (set by the business): a percentage off the items total, not the delivery fee
+  const todayZA = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Johannesburg" });
+  const promoPct = Math.min(90, Math.max(0, Number(settings?.discount_percent) || 0));
+  const promoMin = Math.max(0, Number(settings?.discount_min_order) || 0);
+  const promoOn =
+    !isEnquiry &&
+    !!settings?.discount_enabled &&
+    promoPct > 0 &&
+    !(settings?.discount_ends_on && todayZA > settings.discount_ends_on);
+  const promoActive = promoOn && total > 0 && total >= promoMin;
+  const discountAmount = promoActive ? Math.round(total * promoPct) / 100 : 0;
+  const grandTotal = total - discountAmount + deliveryFee;
+  const promo = PROMO[lang] || PROMO.af;
+  const promoTerms = promoOn
+    ? promo.terms({
+        name: business?.name || "",
+        pct: promoPct,
+        min: promoMin > 0 ? money(promoMin) : "",
+        ends: settings?.discount_ends_on ? fmtDate(settings.discount_ends_on, lang) : "",
+        custom: (settings?.discount_note || "").trim(),
+      })
+    : [];
 
   const setItemChoice = (itemId, groupId, valueId) => {
     setItemChoices((current) => ({
@@ -455,7 +519,8 @@ export default function BusinessMenuPage() {
     });
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
+    if (placing) return;
     if (!cartItems.length) return window.alert(t.addItems);
 
     const digits = (
@@ -467,6 +532,24 @@ export default function BusinessMenuPage() {
       return window.alert("No WhatsApp number has been set for this menu yet.");
     }
     const number = digits.startsWith("0") ? `27${digits.slice(1)}` : digits;
+
+    setPlacing(true);
+    // Open the WhatsApp tab straight away so phones do not block it, then fill it in
+    // once the order number is ready
+    const waWindow = window.open("about:blank", "_blank");
+
+    // Automatic order number: counts 1, 2, 3 ... for this business and starts again each day.
+    // If the number cannot be fetched, the order still goes through without one.
+    let orderNumber = null;
+    if (!isEnquiry) {
+      try {
+        const { data, error } = await supabase.rpc("next_order_number", {
+          p_business_id: Number(business?.id),
+        });
+        if (!error && Number.isInteger(data)) orderNumber = data;
+      } catch {}
+    }
+    const orderTag = orderNumber ? `#${String(orderNumber).padStart(3, "0")}` : null;
 
     const orderLines = cartItems.map((item) => {
       const choices = optionSummary(item.selectedOptions);
@@ -491,12 +574,17 @@ export default function BusinessMenuPage() {
           enquiryCopy.closing,
         ]
       : [
+          ...(orderTag ? [`🧾 *Order ${orderTag}* · via Ons Brandfort Bulletin`, ""] : ["via Ons Brandfort Bulletin", ""]),
           `Hi ${business?.name || ""}, I would like to place an order:`,
           "",
           ...orderLines,
           "",
-          ...(deliveryFee > 0
-            ? [`Subtotal: ${money(total)}`, `Delivery fee: ${money(deliveryFee)}`]
+          ...(deliveryFee > 0 || discountAmount > 0
+            ? [
+                `Subtotal: ${money(total)}`,
+                ...(discountAmount > 0 ? [`Bulletin discount (${promoPct}%): -${money(discountAmount)}`] : []),
+                ...(deliveryFee > 0 ? [`Delivery fee: ${money(deliveryFee)}`] : []),
+              ]
             : []),
           `*Total: ${money(grandTotal)}*`,
           "",
@@ -511,11 +599,10 @@ export default function BusinessMenuPage() {
         ];
 
     trackEvent(isEnquiry ? "menu_enquiry" : "menu_order", { businessId: business?.id });
-    window.open(
-      `https://wa.me/${number}?text=${encodeURIComponent(message.join("\n"))}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+    const waUrl = `https://wa.me/${number}?text=${encodeURIComponent(message.join("\n"))}`;
+    if (waWindow) waWindow.location.href = waUrl;
+    else window.location.href = waUrl;
+    setPlacing(false);
   };
 
   // Count a scan when someone arrives from the business's QR code
@@ -709,7 +796,7 @@ export default function BusinessMenuPage() {
               )}
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-2">
-                  {isEnquiry ? enquiryCopy.heading : "Online Menu"}
+                  {isEnquiry ? enquiryCopy.heading : lang === "af" ? "Aanlyn Katalogus" : "Online Catalogue"}
                 </p>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
                   {business.name}
@@ -885,21 +972,34 @@ export default function BusinessMenuPage() {
                         : settings.collection_note}
                     </p>
                   )}
-                {!isEnquiry && deliveryFee > 0 && (
+                {promoOn && !promoActive && total > 0 && (
+                  <p className="mt-3 rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-300">
+                    🎉 {promo.hint(money(promoMin))}
+                  </p>
+                )}
+                {!isEnquiry && (deliveryFee > 0 || discountAmount > 0) && (
                   <div className="mt-3 space-y-1 text-sm text-neutral-300">
                     <div className="flex justify-between">
                       <span>{t.subtotal}</span>
                       <span>{money(total)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>{t.deliveryFee}</span>
-                      <span>{money(deliveryFee)}</span>
-                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-green-400">
+                        <span>{promo.line(promoPct)}</span>
+                        <span>-{money(discountAmount)}</span>
+                      </div>
+                    )}
+                    {deliveryFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>{t.deliveryFee}</span>
+                        <span>{money(deliveryFee)}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <button
                   onClick={placeOrder}
-                  disabled={!cartItems.length}
+                  disabled={!cartItems.length || placing}
                   className="w-full mt-4 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition py-4 font-bold text-white"
                 >
                   {isEnquiry
@@ -910,6 +1010,21 @@ export default function BusinessMenuPage() {
             )}
           </section>
         )}
+        {promoOn && (
+          <div className="mb-5 rounded-2xl border border-green-500/40 bg-green-500/10 p-4">
+            <p className="font-bold text-green-300">🎉 {promo.banner(promoPct)}</p>
+            {promoMin > 0 && <p className="mt-1 text-sm text-green-100/80">{promo.minLine(money(promoMin))}</p>}
+            <details className="mt-2 text-xs text-neutral-300">
+              <summary className="cursor-pointer text-green-300">{promo.termsTitle}</summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {promoTerms.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        )}
+
                 {!canOrder && (
           <p className="mb-5 text-sm text-neutral-400">{t.noOrderType}</p>
         )}
