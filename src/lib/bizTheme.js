@@ -5,16 +5,25 @@ export const DEFAULT_TEMPLATE = "classic";
 export const DEFAULT_SCHEME = "orange";
 
 // Each colour scheme is 3 colours: dark (background), light (text) and an accent.
-// "orange" is the free default; the other seven are the paid choices.
+// "orange" is the free default; the other five are the paid choices.
 export const SCHEMES = {
   orange: { dark: "#0a0a0a", light: "#f5f5f5", accent: "#ff6a00", name: { af: "Oranje", en: "Orange" } },
   aurora: { dark: "#000815", light: "#ffffff", accent: "#3be872", name: { af: "Aurora", en: "Aurora" } },
-  gig: { dark: "#121212", light: "#caee34", accent: "#fc318b", name: { af: "Konsert", en: "Gig" } },
-  gold: { dark: "#5b3d1b", light: "#f1d6a1", accent: "#ffc13a", name: { af: "Goud", en: "Gold" } },
-  alpine: { dark: "#552b2d", light: "#ecd2c1", accent: "#ef7c89", name: { af: "Alpe", en: "Alpine" } },
-  dawn: { dark: "#3a1a27", light: "#e9c2c3", accent: "#f7c27e", name: { af: "Dagbreek", en: "Dawn Rose" } },
-  lime: { dark: "#183f46", light: "#e9efbf", accent: "#d8f336", name: { af: "Petrol-lime", en: "Petrol Lime" } },
-  butter: { dark: "#651224", light: "#f6f1d3", accent: "#fac102", name: { af: "Botter", en: "Butter" } },
+  midnight: { dark: "#060b18", light: "#e8f0ff", accent: "#3d82ff", name: { af: "Middernag", en: "Midnight" } },
+  emerald: { dark: "#07241c", light: "#f3eddc", accent: "#d9b44a", name: { af: "Smarag", en: "Emerald" } },
+  copper: { dark: "#1d1916", light: "#efe3d0", accent: "#d9814b", name: { af: "Koper", en: "Copper" } },
+  indigo: { dark: "#150f35", light: "#f0ecff", accent: "#9a73ff", name: { af: "Indigo", en: "Indigo" } },
+};
+
+// Businesses that saved one of the old colour schemes get the closest new one,
+// so nobody's page silently jumps back to orange.
+const LEGACY_SCHEMES = {
+  gig: "indigo",
+  gold: "copper",
+  alpine: "copper",
+  dawn: "indigo",
+  lime: "emerald",
+  butter: "copper",
 };
 
 // Classic is free. The other three are part of the paid tools.
@@ -29,10 +38,10 @@ export const TEMPLATES = {
   },
   menu: {
     free: false,
-    name: { af: "Spyskaart eerste", en: "Menu first" },
+    name: { af: "Katalogus eerste", en: "Catalogue first" },
     desc: {
-      af: "Spyskaart en bestel-knoppie bo-aan. Goed vir kos en afhaal.",
-      en: "Menu and order button on top. Great for food and takeaways.",
+      af: "Katalogus en bestel-knoppie bo-aan. Goed vir kos, winkels en afhaal.",
+      en: "Catalogue and order button on top. Great for food, shops and takeaways.",
     },
   },
   showcase: {
@@ -57,7 +66,7 @@ export const templateKeys = Object.keys(TEMPLATES);
 export const schemeKeys = Object.keys(SCHEMES);
 
 export const safeTemplate = (k) => (TEMPLATES[k] ? k : DEFAULT_TEMPLATE);
-export const safeScheme = (k) => (SCHEMES[k] ? k : DEFAULT_SCHEME);
+export const safeScheme = (k) => (SCHEMES[k] ? k : LEGACY_SCHEMES[k] || DEFAULT_SCHEME);
 
 // ---- colour maths (so the page needs no browser colour-mix support) -------
 function hexToRgb(hex) {

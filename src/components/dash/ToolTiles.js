@@ -59,12 +59,26 @@ function Tile({ tool, badge, onPick }) {
 
 export default function ToolTiles({ tools, d, t, onPick }) {
   const badgeFor = (tool) => (tool.state === "soon" ? d.soon : tool.tier === "free" ? t.freeBadge : t.paidBadge);
+  // Free tools in one row, paid tools in the next (anything "coming soon" stays with its tier)
+  const rows = [
+    { key: "free", label: t.freeBadge, items: tools.filter((x) => x.tier === "free") },
+    { key: "paid", label: t.paidBadge, items: tools.filter((x) => x.tier !== "free") },
+  ].filter((r) => r.items.length > 0);
   return (
     <div>
       <SectionLabel>{d.toolsTitle}</SectionLabel>
-      <div className="grid grid-cols-3 gap-3">
-        {tools.map((tool) => (
-          <Tile key={tool.key} tool={tool} badge={badgeFor(tool)} onPick={onPick} />
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.key}>
+            <p className="mb-2 text-[11px] font-extrabold tracking-widest" style={{ color: "var(--bz-muted)" }}>
+              {row.label}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {row.items.map((tool) => (
+                <Tile key={tool.key} tool={tool} badge={badgeFor(tool)} onPick={onPick} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

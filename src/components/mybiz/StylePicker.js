@@ -75,18 +75,10 @@ export default function StylePicker({ biz, t, lang }) {
   const [theme, setTheme] = useState(saved.theme);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [changedAt, setChangedAt] = useState(biz.look_changed_at || null);
   const dirty = template !== saved.template || theme !== saved.theme;
 
-  // One change every 30 days (the database enforces this too)
-  const unlockAt = changedAt ? new Date(new Date(changedAt).getTime() + 30 * 86400000) : null;
-  const locked = !!unlockAt && unlockAt.getTime() > Date.now();
-  const unlockText = unlockAt
-    ? unlockAt.toLocaleDateString(lang === "en" ? "en-ZA" : "af-ZA", { day: "numeric", month: "long" })
-    : "";
-
   const save = async () => {
-    if (locked || !window.confirm(t.styleConfirm)) return;
+    if (!dirty) return;
     setBusy(true);
     setMsg(null);
     const { data, error } = await supabase
@@ -96,24 +88,16 @@ export default function StylePicker({ biz, t, lang }) {
       .select("id");
     setBusy(false);
     if (error || !data || data.length === 0) {
-      const lockedErr = error?.message?.includes("look_locked");
-      setMsg({ ok: false, text: lockedErr ? t.styleLockedGeneric : t.fail });
+      setMsg({ ok: false, text: t.fail });
       return;
     }
-    setChangedAt(new Date().toISOString());
     setSaved({ template, theme });
     setMsg({ ok: true, text: t.saved });
   };
 
   return (
     <div className="mt-4 space-y-5">
-      <p
-        className={`rounded-lg px-3 py-2 text-sm ${
-          locked ? "bg-yellow-600/15 text-yellow-300" : "bg-neutral-800 text-neutral-300"
-        }`}
-      >
-        {locked ? t.styleLocked(unlockText) : t.styleOnceMonth}
-      </p>
+      <p className="rounded-lg bg-neutral-800 px-3 py-2 text-sm text-neutral-300">{t.styleOnceMonth}</p>
 
       <div>
         <p className="mb-2 text-sm font-semibold text-neutral-200">{t.styleLayout}</p>
@@ -146,7 +130,7 @@ export default function StylePicker({ biz, t, lang }) {
 
       <div>
         <p className="mb-2 text-sm font-semibold text-neutral-200">{t.styleColours}</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {schemeKeys.map((key) => (
             <Swatch key={key} scheme={key} label={SCHEMES[key].name[lang]} active={theme === key} onClick={() => setTheme(key)} />
           ))}
@@ -159,7 +143,7 @@ export default function StylePicker({ biz, t, lang }) {
       <button
         type="button"
         onClick={save}
-        disabled={busy || !dirty || locked}
+        disabled={busy || !dirty}
         className="w-full rounded-lg bg-orange-500 px-4 py-3 font-semibold text-black transition hover:bg-orange-600 disabled:opacity-40"
       >
         {busy ? t.saving : t.styleSave}

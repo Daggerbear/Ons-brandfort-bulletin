@@ -1,4 +1,4 @@
-// src/components/dash/Dashboard.js
+ // src/components/dash/Dashboard.js
 // The business control panel: numbers, chart, live activity and every tool in one place.
 "use client";
 import { useState } from "react";
@@ -47,14 +47,16 @@ export default function Dashboard({ biz, plan, menuEnabled, scheme, businesses, 
   const data = useDashData(biz.id, days);
   const active = !!plan?.active;
 
+  // Free tools in one row, paid tools in the next
   const tools = [
     { key: "profile", icon: "🧾", label: d.toolProfile, tier: "free", state: "open", panel: "profile" },
-    { key: "menu", icon: "🍽️", label: d.toolMenu, tier: "paid", state: active ? "open" : "locked", href: `/my-business/${biz.id}/menu` },
-    { key: "style", icon: "🎨", label: d.toolStyle, tier: "paid", state: active ? "open" : "locked", panel: "style" },
-    { key: "qr", icon: "🔳", label: d.toolQr, tier: "paid", state: active ? "open" : "locked", panel: "qr" },
     { key: "posts", icon: "📢", label: d.toolPosts, tier: "free", state: "open", panel: "posts" },
     { key: "logo", icon: "🖼️", label: d.toolLogo, tier: "free", state: "open", panel: "logo" },
+    { key: "menu", icon: "🛍️", label: d.toolMenu, tier: "paid", state: active ? "open" : "locked", href: `/my-business/${biz.id}/menu` },
+    { key: "style", icon: "🎨", label: d.toolStyle, tier: "paid", state: active ? "open" : "locked", panel: "style" },
+    { key: "qr", icon: "🔳", label: d.toolQr, tier: "paid", state: active ? "open" : "locked", panel: "qr" },
   ];
+
 
   const pick = (tool) => setView(tool.state === "locked" ? "locked" : tool.panel);
 
