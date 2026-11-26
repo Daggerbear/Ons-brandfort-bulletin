@@ -1,365 +1,238 @@
 // src/components/BrandfortGrid.js
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { questEvent } from "@/lib/questEvent";
+import {
+  SLOTS, DISTRICTS, TEXT, MAP, MAIN_ROAD, EXTRA_TOP,
+  needOf, haveOf, percentOf, statusOf, boundsOf,
+} from "./grid/gridConfig";
+import { iso, poly, Box, Ground, GridDefs, Traffic, Starfield, GRID_CSS } from "./grid/gridDraw";
+import { Structure } from "./grid/gridStructures";
+import { Hud, SideButtons, Carousel, Sheet, ProjectLabel } from "./grid/GridPanels";
+import { haptic, useSound } from "./grid/gridFx";
 
-// ---------- map size ----------
-const TW = 44; // tile width on screen
-const TH = 22; // tile height on screen
-const N = 20; // the town is N x N tiles
-const ROADS = [5, 10, 15]; // roads run along these rows and columns
-const MAIN_ROAD = 10;
-
-// ---------- the buildings the community funds with BB (in build-queue order) ----------
-const SLOTS = [
-  { gx: 16, gy: 1, w: 3, d: 3, h: 56 }, // Power Grid
-  { gx: 2, gy: 2, w: 2, d: 2, h: 96 }, // Water Tower
-  { gx: 17, gy: 17, w: 2, d: 2, h: 120 }, // Radio Tower
-  { gx: 6, gy: 6, w: 3, d: 3, h: 44 }, // Glitch Cafe Arcade
-  { gx: 11, gy: 11, w: 4, d: 3, h: 70 }, // Town Hall
-  { gx: 6, gy: 16, w: 2, d: 2, h: 36 },
-  { gx: 11, gy: 17, w: 2, d: 2, h: 36 },
-  { gx: 1, gy: 17, w: 2, d: 2, h: 36 },
-];
-
-// ---------- future districts: drawn now so the scale of the plan is visible ----------
-const DISTRICTS = [
-  {
-    id: "food",
-    color: "#fb923c",
-    name: { af: "Eetplek", en: "Food Court" },
-    blurb: {
-      af: "Restaurante, wegneemetes, bakkerye, kafees en spyskaarte.",
-      en: "Restaurants, takeaways, bakeries, cafes and menus.",
-    },
-    blocks: [[1, 11, 2, 2, 20], [3, 11, 1, 2, 30], [1, 13, 1, 2, 26], [2, 13, 2, 1, 16], [2, 14, 2, 1, 22]],
-  },
-  {
-    id: "auto",
-    color: "#a78bfa",
-    name: { af: "Motordistrik", en: "Automotive District" },
-    blurb: {
-      af: "Werkswinkels, bandewinkels, onderdele en voertuigdienste.",
-      en: "Mechanics, panel beaters, tyres, parts and vehicle services.",
-    },
-    blocks: [[6, 11, 3, 1, 18], [6, 12, 1, 2, 26], [8, 12, 1, 2, 22], [7, 13, 1, 1, 12], [6, 14, 3, 1, 20]],
-  },
-  {
-    id: "retail",
-    color: "#f472b6",
-    name: { af: "Kleinhandelsdistrik", en: "Retail District" },
-    blurb: {
-      af: "Klere, algemene handelaars, elektronika en plaaslike winkels.",
-      en: "Clothing, general dealers, electronics and local retailers.",
-    },
-    blocks: [[16, 6, 2, 2, 24], [18, 6, 1, 3, 32], [16, 8, 2, 1, 16], [17, 9, 2, 1, 20], [19, 6, 1, 1, 12]],
-  },
-  {
-    id: "services",
-    color: "#2dd4bf",
-    name: { af: "Diensdistrik", en: "Services District" },
-    blurb: {
-      af: "Rekenmeesters, kontrakteurs, elektrisiëns, loodgieters en ander professionele mense.",
-      en: "Accountants, contractors, electricians, plumbers and other professionals.",
-    },
-    blocks: [[11, 1, 2, 2, 34], [13, 1, 2, 1, 22], [13, 3, 1, 2, 28], [11, 3, 2, 1, 18], [12, 4, 2, 1, 14]],
-  },
-  {
-    id: "homesA",
-    color: "#60a5fa",
-    name: { af: "Woongebied", en: "Residential" },
-    blurb: {
-      af: "Huise en huurplekke uit die Bulletin se behuisingslys.",
-      en: "Homes and rentals from the Bulletin's housing listings.",
-    },
-    blocks: [[1, 6, 1, 1, 10], [3, 6, 1, 1, 14], [1, 8, 1, 1, 12], [3, 8, 1, 1, 10], [2, 7, 1, 1, 16]],
-  },
-  {
-    id: "homesB",
-    color: "#60a5fa",
-    name: { af: "Woongebied", en: "Residential" },
-    blurb: {
-      af: "Huise en huurplekke uit die Bulletin se behuisingslys.",
-      en: "Homes and rentals from the Bulletin's housing listings.",
-    },
-    blocks: [[16, 11, 1, 1, 12], [18, 11, 1, 1, 10], [16, 13, 1, 1, 14], [18, 13, 1, 1, 12], [17, 12, 1, 1, 18]],
-  },
-  {
-    id: "windmill",
-    color: "#22d3ee",
-    name: { af: "Windpomp", en: "Windmill" },
-    blurb: {
-      af: "Brandfort se windpomp. 'n Landmerk van die dorp.",
-      en: "Brandfort's windmill. A landmark of the town.",
-    },
-    blocks: [[7, 2, 1, 1, 78]],
-  },
-];
-
-const COLORS = {
-  done: { line: "#22d3ee", glow: "grid-glow-cyan" },
-  building: { line: "#f87171", glow: "grid-glow-red" },
-  queued: { line: "#2563eb", glow: "" },
+const K_MAX = 2.6;
+const kMinOf = (w, h) => Math.max(0.2, Math.min(w / 960, h / 620) * 0.85);
+const homeOf = (w, h) => {
+  const k = Math.max(0.6, Math.min(w / 960, h / 620) * 1.5);
+  return { k, x: w / 2, y: h * 0.46 - 200 * k };
 };
-
-const TEXT = {
-  af: {
-    loading: "Laai die Grid...",
-    failed: "Kon nie die Grid laai nie.",
-    retry: "Probeer weer",
-    concept:
-      "Konsepvoorskou. Brandfort Grid is 'n eksperimentele konsep, nie 'n klaar produk nie. Spandeer BB om die eerste landmerke te help bou.",
-    done: "Voltooi",
-    building: "Word gebou",
-    queued: "In die ry",
-    soon: "Kom binnekort",
-    myBB: "My BB",
-    invested: "In die dorp",
-    hunters: "Hunters",
-    tap: "Tik op 'n gebou of distrik vir meer inligting.",
-    funded: "Befonds",
-    spend: "Spandeer BB",
-    spendBtn: "Spandeer",
-    max: "Maks",
-    balance: "Jou saldo",
-    noBB: "Jy het nog geen BB nie. Voltooi missies om BB te verdien.",
-    needHunter: "Word 'n Hunter om BB te verdien en te spandeer.",
-    becomeHunter: "Word 'n Hunter",
-    signIn: "Teken in om BB te spandeer.",
-    spent: "Dankie! Jou BB is by die gebou gevoeg.",
-    full: "Hierdie gebou is al ten volle befonds.",
-    notEnough: "Jy het nie genoeg BB nie.",
-    errorSpend: "Kon nie spandeer nie. Probeer weer.",
-    done2: "Hierdie gebou is voltooi.",
-    top: "Top bouers",
-    founders: "Stigters",
-    backers: "Ondersteuners tot dusver",
-    founderNote:
-      "Almal wat bydra voordat 'n gebou 100% bereik, word as stigters van daardie gebou aangeteken. Ons beplan om stigters in die volle Brandfort Grid te noem.",
-    firstFounder: "Wees die eerste stigter!",
-    zoomIn: "Zoem in",
-    zoomOut: "Zoem uit",
-  },
-  en: {
-    loading: "Loading the Grid...",
-    failed: "Couldn't load the Grid.",
-    retry: "Try again",
-    concept:
-      "Concept preview. Brandfort Grid is an experimental concept, not a finished product. Spend BB to help build the first landmarks.",
-    done: "Built",
-    building: "Under construction",
-    queued: "Queued",
-    soon: "Coming soon",
-    myBB: "My BB",
-    invested: "In the town",
-    hunters: "Hunters",
-    tap: "Tap a building or district for details.",
-    funded: "Funded",
-    spend: "Spend BB",
-    spendBtn: "Spend",
-    max: "Max",
-    balance: "Your balance",
-    noBB: "You have no BB yet. Complete missions to earn some.",
-    needHunter: "Become a Hunter to earn and spend BB.",
-    becomeHunter: "Become a Hunter",
-    signIn: "Sign in to spend BB.",
-    spent: "Thank you! Your BB has been added to the building.",
-    full: "This building is already fully funded.",
-    notEnough: "You don't have enough BB.",
-    errorSpend: "Couldn't spend. Please try again.",
-    done2: "This building is complete.",
-    top: "Top builders",
-    founders: "Founders",
-    backers: "Backers so far",
-    founderNote:
-      "Everyone who contributes before a building reaches 100% is recorded as a founder of it. We plan to name founders in the full Brandfort Grid.",
-    firstFounder: "Be the first founder!",
-    zoomIn: "Zoom in",
-    zoomOut: "Zoom out",
-  },
-};
-
-// ---------- drawing helpers ----------
-const iso = (x, y, z = 0) => [(x - y) * (TW / 2), (x + y) * (TH / 2) - z];
-const poly = (points) =>
-  points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-
-function boxFaces(gx, gy, w, d, h) {
-  return {
-    top: poly([iso(gx, gy, h), iso(gx + w, gy, h), iso(gx + w, gy + d, h), iso(gx, gy + d, h)]),
-    left: poly([iso(gx, gy + d, 0), iso(gx + w, gy + d, 0), iso(gx + w, gy + d, h), iso(gx, gy + d, h)]),
-    right: poly([iso(gx + w, gy + d, 0), iso(gx + w, gy, 0), iso(gx + w, gy, h), iso(gx + w, gy + d, h)]),
-  };
-}
-
-function Box({ gx, gy, w, d, h, color, alpha = 0.3, dash, width = 1.2, className }) {
-  const f = boxFaces(gx, gy, w, d, h);
-  const common = { stroke: color, strokeWidth: width, strokeLinejoin: "round", strokeDasharray: dash };
-  return (
-    <g className={className}>
-      <polygon points={f.left} fill={color} fillOpacity={alpha * 0.6} {...common} />
-      <polygon points={f.right} fill={color} fillOpacity={alpha} {...common} />
-      <polygon points={f.top} fill={color} fillOpacity={alpha * 1.4} {...common} />
-    </g>
-  );
-}
-
-function Ground() {
-  const els = [];
-  els.push(
-    <polygon key="floor" points={poly([iso(0, 0), iso(N, 0), iso(N, N), iso(0, N)])} fill="#030a18" />
-  );
-  // roads (each tile is drawn once, even where two roads cross)
-  const roadTiles = new Set();
-  for (let i = 0; i < N; i++) {
-    ROADS.forEach((r) => {
-      roadTiles.add(`${r}-${i}`);
-      roadTiles.add(`${i}-${r}`);
-    });
-  }
-  roadTiles.forEach((tile) => {
-    const [x, y] = tile.split("-").map(Number);
-    const main = x === MAIN_ROAD || y === MAIN_ROAD;
-    els.push(
-      <polygon
-        key={`road-${tile}`}
-        points={poly([iso(x, y), iso(x + 1, y), iso(x + 1, y + 1), iso(x, y + 1)])}
-        fill={main ? "rgba(34,211,238,0.10)" : "rgba(34,211,238,0.05)"}
-        stroke={main ? "rgba(34,211,238,0.32)" : "rgba(34,211,238,0.16)"}
-        strokeWidth="0.6"
-      />
-    );
-  });
-  // grid lines
-  for (let i = 0; i <= N; i++) {
-    const edge = i === 0 || i === N;
-    const stroke = edge ? "#22d3ee" : "#0a2f4d";
-    const width = edge ? 1.6 : 0.6;
-    const [ax, ay] = iso(i, 0);
-    const [bx, by] = iso(i, N);
-    const [cx, cy] = iso(0, i);
-    const [dx, dy] = iso(N, i);
-    els.push(<line key={`a${i}`} x1={ax} y1={ay} x2={bx} y2={by} stroke={stroke} strokeWidth={width} />);
-    els.push(<line key={`b${i}`} x1={cx} y1={cy} x2={dx} y2={dy} stroke={stroke} strokeWidth={width} />);
-  }
-  return <g>{els}</g>;
-}
-
-// ---------- project helpers ----------
-// BB is stored in the town's "materials" column
-const needOf = (p) => p.needs_materials || 0;
-const haveOf = (p) => Math.min(p.have_materials || 0, needOf(p));
-const percentOf = (p) => {
-  if (p.status === "done") return 1;
-  const need = needOf(p);
-  return need ? Math.min(1, haveOf(p) / need) : 0;
-};
-const statusOf = (p) =>
-  p.status === "done" ? "done" : percentOf(p) > 0 || p.status === "building" ? "building" : "queued";
-
-function Project({ project, slot, selected, onSelect, lang }) {
-  const status = statusOf(project);
-  const c = COLORS[status];
-  const pct = percentOf(project);
-  const lit = status === "done" ? slot.h : status === "building" ? Math.max(6, slot.h * pct) : 0;
-  const name = (lang === "af" ? project.name_af : project.name_en) || project.name_en;
-  const [lx, ly] = iso(slot.gx + slot.w / 2, slot.gy + slot.d / 2, slot.h + 14);
-  const footprint = poly([
-    iso(slot.gx, slot.gy),
-    iso(slot.gx + slot.w, slot.gy),
-    iso(slot.gx + slot.w, slot.gy + slot.d),
-    iso(slot.gx, slot.gy + slot.d),
-  ]);
-
-  return (
-    <g onClick={() => onSelect({ type: "project", id: project.key })} style={{ cursor: "pointer" }}>
-      {selected && (
-        <polygon points={footprint} fill="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="4 3" />
-      )}
-      {status !== "done" && <Box {...slot} color={c.line} alpha={0} dash="3 4" width={1} />}
-      {lit > 0 && (
-        <Box
-          gx={slot.gx}
-          gy={slot.gy}
-          w={slot.w}
-          d={slot.d}
-          h={lit}
-          color={c.line}
-          alpha={status === "done" ? 0.34 : 0.28}
-          className={`${c.glow} ${status === "building" ? "grid-building" : ""} ${
-            status === "done" ? "grid-complete" : ""
-          }`}
-        />
-      )}
-      <text x={lx} y={ly} textAnchor="middle" fontSize="11" fontWeight="700" fill={c.line}>
-        {project.icon} {name}
-      </text>
-      {status === "building" && (
-        <text x={lx} y={ly + 13} textAnchor="middle" fontSize="10" fill="#fecaca">
-          {Math.round(pct * 100)}%
-        </text>
-      )}
-    </g>
-  );
-}
-
-function District({ district, block, selected, onSelect }) {
-  const [gx, gy, w, d, h] = block;
-  return (
-    <g onClick={() => onSelect({ type: "district", id: district.id })} style={{ cursor: "pointer" }}>
-      <Box
-        gx={gx}
-        gy={gy}
-        w={w}
-        d={d}
-        h={h}
-        color={district.color}
-        alpha={selected ? 0.22 : 0.1}
-        dash="2 3"
-        width={0.9}
-      />
-    </g>
-  );
-}
-
-function boundsOf(district) {
-  let x0 = 99, y0 = 99, x1 = 0, y1 = 0, hMax = 0;
-  district.blocks.forEach(([gx, gy, w, d, h]) => {
-    x0 = Math.min(x0, gx);
-    y0 = Math.min(y0, gy);
-    x1 = Math.max(x1, gx + w);
-    y1 = Math.max(y1, gy + d);
-    hMax = Math.max(hMax, h);
-  });
-  return { x0, y0, x1, y1, hMax };
-}
-
-function Bar({ pct, color }) {
-  return (
-    <div className="h-1.5 overflow-hidden rounded-full bg-cyan-950">
-      <div className="h-full rounded-full" style={{ width: `${Math.round(pct * 100)}%`, background: color }} />
-    </div>
-  );
-}
-
-const QUICK = [10, 25, 50];
 
 export default function BrandfortGrid({ lang = "af" }) {
-  const t = TEXT[lang === "af" ? "af" : "en"];
+  const L = lang === "af" ? "af" : "en";
+  const t = TEXT[L];
+  const router = useRouter();
+
   const [state, setState] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [selected, setSelected] = useState(null); // { type, id }
-  const [zoom, setZoom] = useState(1);
+  const [selected, setSelected] = useState(null); // { type: "project" | "district" | "info", id }
   const [bb, setBB] = useState(null); // null = not signed in or not a hunter
   const [amount, setAmount] = useState(10);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [backers, setBackers] = useState(null);
   const [tick, setTick] = useState(0);
-  const scroller = useRef(null);
-  const centered = useRef(false);
+  const [bursts, setBursts] = useState([]);
+  const [banner, setBanner] = useState(null);
+  const [live, setLive] = useState(true);
+  const [sound, setSound] = useState(false);
+  const [hintSeen, setHintSeen] = useState(true);
 
+  const { tap, chime } = useSound(sound);
+
+  const stage = useRef(null);
+  const world = useRef(null);
+  const labels = useRef(new Map());
+  const cardRefs = useRef({});
+  const cam = useRef({ x: 0, y: 0, k: 0.8 });
+  const size = useRef({ w: 0, h: 0 });
+  const flyId = useRef(0);
+  const pointers = useRef(new Map());
+  const gesture = useRef({ moved: false, pinch: null, start: null });
+  const picked = useRef(false);
+  const prev = useRef(null);
+  const fxId = useRef(0);
+  const celebrateRef = useRef(null);
+
+  // ---------- camera ----------
+  const applyCam = useCallback(() => {
+    const { x, y, k } = cam.current;
+    if (world.current) {
+      world.current.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${k.toFixed(4)})`);
+    }
+    labels.current.forEach(({ el, wx, wy }) => {
+      el.setAttribute("transform", `translate(${(wx * k + x).toFixed(1)} ${(wy * k + y).toFixed(1)})`);
+    });
+  }, []);
+
+  const clampCam = useCallback((c) => {
+    const { w, h } = size.current;
+    if (!w) return c;
+    const k = Math.min(K_MAX, Math.max(kMinOf(w, h), c.k));
+    let { x, y } = c;
+    const left = MAP.x0 * k + x;
+    const right = MAP.x1 * k + x;
+    const topEdge = MAP.y0 * k + y;
+    const bottom = MAP.y1 * k + y;
+    if (right < w * 0.3) x += w * 0.3 - right;
+    if (left > w * 0.7) x -= left - w * 0.7;
+    if (bottom < h * 0.3) y += h * 0.3 - bottom;
+    if (topEdge > h * 0.7) y -= topEdge - h * 0.7;
+    return { x, y, k };
+  }, []);
+
+  const fly = useCallback(
+    (to, ms = 520) => {
+      const id = ++flyId.current;
+      const from = { ...cam.current };
+      const target = clampCam(to);
+      const t0 = performance.now();
+      const step = (now) => {
+        if (flyId.current !== id) return;
+        const p = Math.min(1, (now - t0) / ms);
+        const e = 1 - Math.pow(1 - p, 3);
+        cam.current = {
+          x: from.x + (target.x - from.x) * e,
+          y: from.y + (target.y - from.y) * e,
+          k: from.k + (target.k - from.k) * e,
+        };
+        applyCam();
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    },
+    [applyCam, clampCam]
+  );
+
+  const focusOn = useCallback(
+    (wx, wy, k, yFrac = 0.3) => {
+      const { w, h } = size.current;
+      fly({ x: w / 2 - wx * k, y: h * yFrac - wy * k, k });
+    },
+    [fly]
+  );
+
+  const zoomBy = (f) => {
+    const { w, h } = size.current;
+    const c = cam.current;
+    const k = Math.min(K_MAX, Math.max(kMinOf(w, h), c.k * f));
+    const px = w / 2;
+    const py = h * 0.45;
+    fly({ x: px - (px - c.x) * (k / c.k), y: py - (py - c.y) * (k / c.k), k }, 240);
+  };
+
+  const goHome = () => {
+    const { w, h } = size.current;
+    fly(homeOf(w, h));
+  };
+
+  // measure the stage and place the camera the first time
+  useLayoutEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => {
+      const w = e.contentRect.width;
+      const h = e.contentRect.height;
+      const first = size.current.w === 0;
+      size.current = { w, h };
+      cam.current = first && w ? clampCam(homeOf(w, h)) : clampCam(cam.current);
+      applyCam();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [status, applyCam, clampCam]);
+
+  // keep label positions correct after every render
+  useLayoutEffect(() => {
+    applyCam();
+  });
+
+  // ---------- gestures: drag, pinch, wheel ----------
+  const startPinch = () => {
+    const pts = [...pointers.current.values()];
+    if (pts.length < 2) return;
+    const [a, b] = pts;
+    const rect = stage.current.getBoundingClientRect();
+    const mx = (a.x + b.x) / 2 - rect.left;
+    const my = (a.y + b.y) / 2 - rect.top;
+    const c = cam.current;
+    gesture.current.pinch = {
+      dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      k: c.k,
+      wx: (mx - c.x) / c.k,
+      wy: (my - c.y) / c.k,
+    };
+  };
+
+  const onDown = (e) => {
+    flyId.current++; // a touch cancels any camera flight
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = gesture.current;
+    if (pointers.current.size === 1) {
+      g.moved = false;
+      g.pinch = null;
+      g.start = { x: e.clientX, y: e.clientY };
+    } else if (pointers.current.size === 2) {
+      g.moved = true;
+      try {
+        stage.current.setPointerCapture(e.pointerId);
+      } catch {}
+      startPinch();
+    }
+  };
+
+  const onMove = (e) => {
+    const p = pointers.current.get(e.pointerId);
+    if (!p) return;
+    const g = gesture.current;
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+
+    if (pointers.current.size >= 2 && g.pinch) {
+      const [a, b] = [...pointers.current.values()];
+      const rect = stage.current.getBoundingClientRect();
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const mx = (a.x + b.x) / 2 - rect.left;
+      const my = (a.y + b.y) / 2 - rect.top;
+      const k = g.pinch.k * (dist / g.pinch.dist);
+      cam.current = clampCam({ k, x: mx - g.pinch.wx * k, y: my - g.pinch.wy * k });
+      applyCam();
+      return;
+    }
+
+    if (!g.moved && g.start && Math.hypot(e.clientX - g.start.x, e.clientY - g.start.y) > 7) {
+      g.moved = true;
+      try {
+        stage.current.setPointerCapture(e.pointerId);
+      } catch {}
+    }
+    if (g.moved) {
+      cam.current = clampCam({ ...cam.current, x: cam.current.x + dx, y: cam.current.y + dy });
+      applyCam();
+    }
+  };
+
+  const onUp = (e) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) gesture.current.pinch = null;
+  };
+
+  const onWheel = (e) => {
+    const rect = stage.current.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const c = cam.current;
+    const { w, h } = size.current;
+    const k = Math.min(K_MAX, Math.max(kMinOf(w, h), c.k * (e.deltaY < 0 ? 1.12 : 0.89)));
+    cam.current = clampCam({ k, x: px - (px - c.x) * (k / c.k), y: py - (py - c.y) * (k / c.k) });
+    applyCam();
+  };
+
+  // ---------- data ----------
   const loadBB = useCallback(async () => {
     const { data, error } = await supabase.from("hunter_inventory").select("item, qty");
     if (error) return;
@@ -373,6 +246,19 @@ export default function BrandfortGrid({ lang = "af" }) {
       setStatus((s) => (s === "ready" ? s : "failed"));
       return;
     }
+    const projs = data.projects || [];
+    const next = {};
+    projs.forEach((p) => {
+      next[p.key] = statusOf(p);
+    });
+    if (prev.current) {
+      projs.forEach((p, i) => {
+        if (next[p.key] === "done" && prev.current[p.key] && prev.current[p.key] !== "done") {
+          if (celebrateRef.current) celebrateRef.current(p, i);
+        }
+      });
+    }
+    prev.current = next;
     setState(data);
     setStatus("ready");
   }, []);
@@ -390,13 +276,17 @@ export default function BrandfortGrid({ lang = "af" }) {
     return () => clearInterval(id);
   }, [load, loadBB]);
 
+  // saved preferences + reduced motion
   useEffect(() => {
-    const el = scroller.current;
-    if (status === "ready" && el && !centered.current) {
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-      centered.current = true;
+    try {
+      setSound(localStorage.getItem("bgSound") === "1");
+      setHintSeen(localStorage.getItem("bgHint") === "1");
+    } catch {
+      setHintSeen(false);
     }
-  }, [status]);
+    const mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    if (mq) setLive(!mq.matches);
+  }, []);
 
   const pickedKey = selected?.type === "project" ? selected.id : null;
   useEffect(() => {
@@ -413,34 +303,184 @@ export default function BrandfortGrid({ lang = "af" }) {
     };
   }, [pickedKey, tick]);
 
+  // scroll the carousel to the selected card
+  useEffect(() => {
+    if (!selected || selected.type === "info") return;
+    const el = cardRefs.current[selected.id];
+    if (el && el.scrollIntoView) el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [selected]);
+
+  // ---------- derived values ----------
+  const projects = state?.projects || [];
+  const shown = projects.slice(0, SLOTS.length);
+  const pickedProject = selected?.type === "project" ? projects.find((p) => p.key === selected.id) : null;
+  const pickedIndex = pickedProject ? projects.indexOf(pickedProject) : -1;
+  const pickedDistrict = selected?.type === "district" ? DISTRICTS.find((d) => d.id === selected.id) : null;
+
+  const invested = shown.reduce((sum, p) => sum + haveOf(p), 0);
+  const totalNeed = shown.reduce((sum, p) => sum + needOf(p), 0);
+  const totalDone = shown.reduce((sum, p) => sum + (p.status === "done" ? needOf(p) : haveOf(p)), 0);
+  const townPct = totalNeed ? Math.round((totalDone / totalNeed) * 100) : 0;
+  const townLevel = 1 + shown.filter((p) => p.status === "done").length;
+
+  const remaining = pickedProject ? Math.max(0, needOf(pickedProject) - haveOf(pickedProject)) : 0;
+  const maxSpend = Math.max(0, Math.min(bb ?? 0, remaining));
+  const spendAmount = Math.max(0, Math.min(amount, maxSpend));
+
+  // ---------- effects: bursts, celebration ----------
+  const burst = (slot, color, n = 16, text) => {
+    if (!slot) return;
+    const [x, y] = iso(slot.gx + slot.w / 2, slot.gy + slot.d / 2, slot.h * 0.6);
+    const id = ++fxId.current;
+    const parts = Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.4;
+      const r = 30 + Math.random() * 50;
+      return {
+        dx: Math.cos(a) * r,
+        dy: Math.sin(a) * r * 0.7 - 20,
+        s: 1.6 + Math.random() * 2.2,
+        delay: Math.random() * 0.12,
+      };
+    });
+    setBursts((b) => [...b, { id, x, y, color, parts, text }]);
+    setTimeout(() => setBursts((b) => b.filter((f) => f.id !== id)), 1700);
+  };
+
+  const celebrate = (p, i) => {
+    const name = (L === "af" ? p.name_af : p.name_en) || p.name_en;
+    const id = ++fxId.current;
+    setBanner({ id, icon: p.icon, text: t.complete.replace("{name}", name) });
+    burst(SLOTS[i], "#22d3ee", 28);
+    haptic([30, 40, 30, 40, 90]);
+    chime();
+    setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 3900);
+  };
+  celebrateRef.current = celebrate;
+
+  // ---------- selecting ----------
+  const select = (sel) => {
+    setSelected(sel);
+    setMsg(null);
+    tap();
+    haptic(8);
+    try {
+      localStorage.setItem("bgHint", "1");
+    } catch {}
+    setHintSeen(true);
+    let target = null;
+    if (sel.type === "project") {
+      const s = SLOTS[projects.findIndex((p) => p.key === sel.id)];
+      if (s) target = iso(s.gx + s.w / 2, s.gy + s.d / 2, s.h * 0.4);
+    } else if (sel.type === "district") {
+      const d = DISTRICTS.find((x) => x.id === sel.id);
+      if (d) {
+        const b = boundsOf(d);
+        target = iso((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.hMax * 0.4);
+      }
+    }
+    if (target) focusOn(target[0], target[1], Math.max(cam.current.k, 1.05), 0.3);
+  };
+
+  const pickFromMap = (sel) => {
+    if (gesture.current.moved) return;
+    picked.current = true;
+    select(sel);
+  };
+
+  const onStageClick = () => {
+    if (gesture.current.moved) return;
+    if (picked.current) {
+      picked.current = false;
+      return;
+    }
+    setSelected(null);
+  };
+
+  const toggleSound = () => {
+    const next = !sound;
+    setSound(next);
+    try {
+      localStorage.setItem("bgSound", next ? "1" : "0");
+    } catch {}
+  };
+
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/profile/hunter");
+  };
+
+  // ---------- spending ----------
+  const spend = async () => {
+    if (!pickedProject || spendAmount <= 0 || busy) return;
+    const amountNow = spendAmount;
+    const slot = SLOTS[pickedIndex];
+    setBusy(true);
+    setMsg(null);
+    const { error } = await supabase.rpc("town_spend", {
+      p_key: pickedProject.key,
+      p_amount: amountNow,
+    });
+    setBusy(false);
+    if (error) {
+      const m = error.message || "";
+      setMsg({
+        ok: false,
+        text: m.includes("not_enough") ? t.notEnough : m.includes("full") ? t.full : t.errorSpend,
+      });
+      haptic(60);
+    } else {
+      setMsg({ ok: true, text: t.spent });
+      burst(slot, "#facc15", 18, `+${amountNow} BB`);
+      haptic([20, 30, 20]);
+      chime();
+    }
+    load();
+    loadBB();
+    setTick((n) => n + 1);
+  };
+
+  // ---------- loading and error screens ----------
+  const shell = "gx-root fixed inset-0 z-[70] overflow-hidden text-white";
+  const sky = { background: "radial-gradient(ellipse at 50% 38%, #0b2a4a 0%, #050d1c 45%, #02040a 100%)" };
+
   if (status === "loading") {
     return (
-      <div className="mx-3 mt-4 h-96 animate-pulse rounded-2xl bg-cyan-950/40">
-        <p className="p-6 text-sm text-cyan-300">{t.loading}</p>
+      <div className={shell} style={sky}>
+        <style>{GRID_CSS}</style>
+        <div className="flex h-full flex-col items-center justify-center gap-4">
+          <div className="gx-bar h-1.5 w-40 rounded-full" />
+          <p className="text-sm font-semibold tracking-wide text-cyan-300">{t.loading}</p>
+        </div>
       </div>
     );
   }
 
   if (status === "failed") {
     return (
-      <div className="grid-panel grid-panel-red mx-3 mt-4 p-6 text-center">
-        <p role="alert" className="text-sm text-red-200">{t.failed}</p>
-        <button
-          type="button"
-          onClick={() => {
-            setStatus("loading");
-            load();
-          }}
-          className="mt-4 rounded-full border border-cyan-400 px-5 py-2 text-sm text-cyan-200"
-        >
-          {t.retry}
-        </button>
+      <div className={shell} style={sky}>
+        <style>{GRID_CSS}</style>
+        <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+          <p role="alert" className="text-sm text-red-200">{t.failed}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("loading");
+              load();
+            }}
+            className="rounded-full border border-cyan-400 px-6 py-2 text-sm text-cyan-200"
+          >
+            {t.retry}
+          </button>
+          <button type="button" onClick={goBack} className="text-xs text-cyan-100/60 underline">
+            {t.back}
+          </button>
+        </div>
       </div>
     );
   }
 
-  const projects = state.projects || [];
-  const projectItems = projects.slice(0, SLOTS.length).map((p, i) => ({
+  // ---------- scene ----------
+  const projectItems = shown.map((p, i) => ({
     kind: "project",
     p,
     slot: SLOTS[i],
@@ -455,303 +495,241 @@ export default function BrandfortGrid({ lang = "af" }) {
       depth: block[0] + block[1] + block[2] + block[3],
     }))
   );
-  const items = [
-    ...projectItems,
-    ...districtItems,
-    { kind: "beacon", depth: MAIN_ROAD * 2 + 2 },
-  ].sort((a, b) => a.depth - b.depth);
+  const items = [...projectItems, ...districtItems, { kind: "beacon", depth: MAIN_ROAD * 2 + 2 }].sort(
+    (a, b) => a.depth - b.depth
+  );
 
-  const pickedProject =
-    selected?.type === "project" ? projects.find((p) => p.key === selected.id) : null;
-  const pickedDistrict =
-    selected?.type === "district" ? DISTRICTS.find((d) => d.id === selected.id) : null;
+  const hintKey = hintSeen ? null : (shown.find((p) => p.status !== "done") || {}).key;
 
-  const invested = projects.reduce((sum, p) => sum + haveOf(p), 0);
-
-  const remaining = pickedProject ? Math.max(0, needOf(pickedProject) - haveOf(pickedProject)) : 0;
-  const maxSpend = Math.max(0, Math.min(bb ?? 0, remaining));
-  const spendAmount = Math.max(0, Math.min(amount, maxSpend));
-
-  const spend = async () => {
-    if (!pickedProject || spendAmount <= 0) return;
-    setBusy(true);
-    setMsg(null);
-    const { error } = await supabase.rpc("town_spend", {
-      p_key: pickedProject.key,
-      p_amount: spendAmount,
-    });
-    setBusy(false);
-    if (error) {
-      const m = error.message || "";
-      setMsg({
-        ok: false,
-        text: m.includes("not_enough") ? t.notEnough : m.includes("full") ? t.full : t.errorSpend,
-      });
-    } else {
-      setMsg({ ok: true, text: t.spent });
-    }
-    load();
-    loadBB();
-    setTick((n) => n + 1);
+  const regLabel = (key, wx, wy) => (el) => {
+    if (el) labels.current.set(key, { el, wx, wy });
+    else labels.current.delete(key);
   };
 
-  // Labels for districts sit above their tallest block
-  const districtLabels = DISTRICTS.filter((d) => d.id !== "homesB").map((d) => {
-    const b = boundsOf(d);
-    const [x, y] = iso((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.hMax + 12);
-    return { d, x, y };
-  });
+  const cards = [
+    ...shown.map((p) => ({
+      id: p.key,
+      type: "project",
+      icon: p.icon,
+      name: (L === "af" ? p.name_af : p.name_en) || p.name_en,
+      pct: percentOf(p),
+      status: statusOf(p),
+    })),
+    ...DISTRICTS.filter((d) => d.id !== "homesB").map((d) => ({
+      id: d.id,
+      type: "district",
+      icon: "🔒",
+      name: d.name[L],
+      color: d.color,
+    })),
+  ];
 
-  const baseW = 900;
+  const sheetMode = selected ? (pickedProject ? "project" : pickedDistrict ? "district" : selected.type === "info" ? "info" : null) : null;
 
   return (
-    <div className="pb-10">
-      <div className="grid-panel mx-3 mt-3 px-3 py-2">
-        <p className="text-[11px] leading-snug text-cyan-100/80">{t.concept}</p>
-      </div>
+    <div className={shell} style={sky}>
+      <style>{GRID_CSS}</style>
+      <Starfield />
 
-      <div className="mx-3 mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="grid-panel px-2 py-2">
-          <p className="text-lg font-black tabular-nums text-cyan-300">{bb === null ? "–" : bb} BB</p>
-          <p className="text-[10px] uppercase tracking-wide text-cyan-100/60">{t.myBB}</p>
-        </div>
-        <div className="grid-panel px-2 py-2">
-          <p className="text-lg font-black tabular-nums text-cyan-300">{invested} BB</p>
-          <p className="text-[10px] uppercase tracking-wide text-cyan-100/60">{t.invested}</p>
-        </div>
-        <div className="grid-panel px-2 py-2">
-          <p className="text-lg font-black tabular-nums text-cyan-300">🎯 {state.hunters ?? 0}</p>
-          <p className="text-[10px] uppercase tracking-wide text-cyan-100/60">{t.hunters}</p>
-        </div>
-      </div>
-
-      <div className="relative mt-3">
-        <div className="absolute right-3 top-2 z-10 flex gap-2">
-          <button
-            type="button"
-            aria-label={t.zoomOut}
-            onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.2).toFixed(1)))}
-            className="h-9 w-9 rounded-full border border-cyan-400/50 bg-black/70 text-lg font-bold text-cyan-300"
-          >
-            −
-          </button>
-          <button
-            type="button"
-            aria-label={t.zoomIn}
-            onClick={() => setZoom((z) => Math.min(1.8, +(z + 0.2).toFixed(1)))}
-            className="h-9 w-9 rounded-full border border-cyan-400/50 bg-black/70 text-lg font-bold text-cyan-300"
-          >
-            +
-          </button>
-        </div>
-
-        <div ref={scroller} className="overflow-auto" style={{ maxHeight: "70vh" }}>
-          <svg
-            viewBox="-450 -130 900 600"
-            style={{ width: baseW * zoom, maxWidth: "none", display: "block", margin: "0 auto" }}
-            role="img"
-            aria-label="Brandfort Grid"
-          >
-            <Ground />
+      <div
+        ref={stage}
+        className="absolute inset-0"
+        style={{ touchAction: "none" }}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        onWheel={onWheel}
+        onClick={onStageClick}
+      >
+        <svg width="100%" height="100%" style={{ display: "block" }} role="img" aria-label="Brandfort Grid">
+          <GridDefs />
+          <g ref={world}>
+            <Ground live={live} />
+            {live && <Traffic />}
             {items.map((it) => {
               if (it.kind === "beacon") {
                 return (
-                  <Box
-                    key="beacon"
-                    gx={MAIN_ROAD}
-                    gy={MAIN_ROAD}
-                    w={1}
-                    d={1}
-                    h={26}
-                    color="#22d3ee"
-                    alpha={0.35}
-                    className="grid-pulse grid-glow-cyan"
-                  />
+                  <g key="beacon" filter="url(#gx-glow)">
+                    <Box gx={MAIN_ROAD} gy={MAIN_ROAD} w={1} d={1} h={26} color="#22d3ee" alpha={0.35} className="gx-pulse" />
+                  </g>
                 );
               }
               if (it.kind === "project") {
+                const { p, slot } = it;
+                const sel = selected?.type === "project" && selected.id === p.key;
+                const footprint = poly([
+                  iso(slot.gx, slot.gy),
+                  iso(slot.gx + slot.w, slot.gy),
+                  iso(slot.gx + slot.w, slot.gy + slot.d),
+                  iso(slot.gx, slot.gy + slot.d),
+                ]);
                 return (
-                  <Project
-                    key={it.p.key}
-                    project={it.p}
-                    slot={it.slot}
-                    lang={lang}
-                    selected={selected?.type === "project" && selected.id === it.p.key}
-                    onSelect={setSelected}
-                  />
+                  <g key={p.key} onClick={() => pickFromMap({ type: "project", id: p.key })} style={{ cursor: "pointer" }}>
+                    <polygon points={footprint} fill="rgba(0,0,0,0.001)" />
+                    {sel && (
+                      <polygon
+                        points={footprint}
+                        fill="rgba(255,255,255,0.06)"
+                        stroke="#fff"
+                        strokeWidth="1.6"
+                        strokeDasharray="5 4"
+                        className="gx-march"
+                      />
+                    )}
+                    <Structure slot={slot} status={statusOf(p)} pct={percentOf(p)} live={live} />
+                  </g>
                 );
               }
+              const sel = selected?.type === "district" && selected.id === it.dist.id;
+              const [gx, gy, w, d, h] = it.block;
               return (
-                <District
-                  key={it.key}
-                  district={it.dist}
-                  block={it.block}
-                  selected={selected?.type === "district" && selected.id === it.dist.id}
-                  onSelect={setSelected}
-                />
+                <g key={it.key} onClick={() => pickFromMap({ type: "district", id: it.dist.id })} style={{ cursor: "pointer" }}>
+                  <Box
+                    gx={gx}
+                    gy={gy}
+                    w={w}
+                    d={d}
+                    h={h}
+                    color={it.dist.color}
+                    alpha={sel ? 0.26 : 0.1}
+                    dash="2 3"
+                    width={sel ? 1.5 : 0.9}
+                  />
+                </g>
               );
             })}
-            {districtLabels.map(({ d, x, y }) => (
-              <text
-                key={`l-${d.id}`}
-                x={x}
-                y={y}
-                textAnchor="middle"
-                fontSize="10"
-                fontWeight="700"
-                fill={d.color}
-                fillOpacity="0.85"
-                style={{ pointerEvents: "none" }}
-              >
-                {d.name[lang === "af" ? "af" : "en"]}
-              </text>
-            ))}
-          </svg>
-        </div>
-      </div>
 
-      <div className="mx-3 mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-cyan-100/70">
-        <span><span style={{ color: COLORS.done.line }}>■</span> {t.done}</span>
-        <span><span style={{ color: COLORS.building.line }}>■</span> {t.building}</span>
-        <span><span style={{ color: COLORS.queued.line }}>■</span> {t.queued}</span>
-        <span><span style={{ color: "#fb923c" }}>■</span> {t.soon}</span>
-      </div>
-
-      <div className="grid-panel mx-3 mt-4 p-4">
-        {pickedProject ? (
-          <>
-            <p className="text-sm font-black text-white">
-              {pickedProject.icon}{" "}
-              {(lang === "af" ? pickedProject.name_af : pickedProject.name_en) || pickedProject.name_en}
-            </p>
-            <p className="mt-0.5 text-xs" style={{ color: COLORS[statusOf(pickedProject)].line }}>
-              {t[statusOf(pickedProject)]} · {Math.round(percentOf(pickedProject) * 100)}%
-            </p>
-            <div className="mt-2">
-              <Bar pct={percentOf(pickedProject)} color={COLORS[statusOf(pickedProject)].line} />
-            </div>
-            <p className="mt-2 text-xs tabular-nums text-cyan-100/70">
-              {t.funded}: {haveOf(pickedProject)} / {needOf(pickedProject)} BB
-            </p>
-
-            <div className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/5 p-3">
-              <p className="text-[11px] font-bold tracking-[0.2em] text-yellow-300">
-                ★ {pickedProject.status === "done" ? t.founders : t.backers}
-              </p>
-              {backers && backers.length > 0 ? (
-                <ul className="mt-2 space-y-1">
-                  {backers.slice(0, 8).map((b) => (
-                    <li key={b.gamer_name} className="flex justify-between text-xs">
-                      <span className="text-neutral-200">{b.gamer_name}</span>
-                      <span className="tabular-nums text-yellow-200">{b.total} BB</span>
-                    </li>
-                  ))}
-                  {backers.length > 8 && (
-                    <li className="text-[11px] text-neutral-500">+{backers.length - 8}</li>
-                  )}
-                </ul>
-              ) : (
-                pickedProject.status !== "done" && (
-                  <p className="mt-2 text-xs text-yellow-100/80">{t.firstFounder}</p>
-                )
-              )}
-              {pickedProject.status !== "done" && (
-                <p className="mt-2 text-[10px] leading-snug text-neutral-500">{t.founderNote}</p>
-              )}
-            </div>
-
-            {pickedProject.status === "done" ? (
-              <p className="mt-3 text-xs text-green-400">{t.done2}</p>
-            ) : bb === null ? (
-              <p className="mt-3 text-xs text-cyan-100/70">
-                {t.signIn}{" "}
-                <a href="/profile/hunter" className="text-cyan-300 underline">
-                  {t.becomeHunter}
-                </a>
-              </p>
-            ) : bb <= 0 ? (
-              <p className="mt-3 text-xs text-cyan-100/70">{t.noBB}</p>
-            ) : (
-              <div className="mt-3 border-t border-cyan-400/20 pt-3">
-                <p className="text-[11px] font-bold tracking-[0.2em] text-cyan-300">
-                  {t.spend}
-                </p>
-                <p className="mt-1 text-[11px] text-cyan-100/60">
-                  {t.balance}: {bb} BB
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {QUICK.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => setAmount(q)}
-                      className={`rounded-full border px-3 py-1 text-xs font-bold ${
-                        spendAmount === Math.min(q, maxSpend) && amount === q
-                          ? "border-cyan-300 bg-cyan-400/20 text-cyan-200"
-                          : "border-cyan-400/30 text-cyan-300"
-                      }`}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setAmount(maxSpend)}
-                    className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-bold text-cyan-300"
+            {bursts.map((b) => (
+              <g key={b.id} transform={`translate(${b.x.toFixed(1)} ${b.y.toFixed(1)})`} style={{ pointerEvents: "none" }}>
+                {b.parts.map((pt, i) => (
+                  <circle
+                    key={i}
+                    r={pt.s}
+                    fill={b.color}
+                    className="gx-burst"
+                    style={{ "--dx": `${pt.dx}px`, "--dy": `${pt.dy}px`, animationDelay: `${pt.delay}s` }}
+                  />
+                ))}
+                {b.text && (
+                  <text
+                    textAnchor="middle"
+                    fontSize="16"
+                    fontWeight="900"
+                    fill="#fde68a"
+                    stroke="#000"
+                    strokeWidth="3"
+                    paintOrder="stroke"
+                    className="gx-rise"
                   >
-                    {t.max} ({maxSpend})
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy || spendAmount <= 0}
-                  onClick={spend}
-                  className="mt-3 w-full rounded-full bg-cyan-400 py-2 text-sm font-bold text-black transition hover:bg-cyan-300 disabled:opacity-40"
-                >
-                  {t.spendBtn} {spendAmount} BB
-                </button>
-              </div>
-            )}
+                    {b.text}
+                  </text>
+                )}
+              </g>
+            ))}
+          </g>
 
-            {msg && (
-              <p
-                role={msg.ok ? "status" : "alert"}
-                className={`mt-2 text-xs ${msg.ok ? "text-green-400" : "text-red-300"}`}
-              >
-                {msg.text}
-              </p>
-            )}
-          </>
-        ) : pickedDistrict ? (
-          <>
-            <p className="text-sm font-black" style={{ color: pickedDistrict.color }}>
-              {pickedDistrict.name[lang === "af" ? "af" : "en"]}
-            </p>
-            <p className="mt-0.5 text-xs text-cyan-100/60">🔒 {t.soon}</p>
-            <p className="mt-2 text-xs text-cyan-100/80">
-              {pickedDistrict.blurb[lang === "af" ? "af" : "en"]}
-            </p>
-          </>
-        ) : (
-          <p className="text-xs text-cyan-100/60">{t.tap}</p>
-        )}
+          {/* name tags: kept in screen space so they stay readable at any zoom */}
+          <g style={{ pointerEvents: "none" }}>
+            {projectItems.map(({ p, slot }) => {
+              const [wx, wy] = iso(slot.gx + slot.w / 2, slot.gy + slot.d / 2, slot.h + (EXTRA_TOP[slot.type] || 0) + 14);
+              return (
+                <g key={`lab-${p.key}`} ref={regLabel(`p-${p.key}`, wx, wy)}>
+                  <ProjectLabel
+                    name={(L === "af" ? p.name_af : p.name_en) || p.name_en}
+                    icon={p.icon}
+                    pct={percentOf(p)}
+                    status={statusOf(p)}
+                    selected={selected?.type === "project" && selected.id === p.key}
+                    hint={hintKey === p.key}
+                    hintText={t.tapHint}
+                  />
+                </g>
+              );
+            })}
+            {DISTRICTS.filter((d) => d.id !== "homesB").map((d) => {
+              const b = boundsOf(d);
+              const [wx, wy] = iso((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.hMax + 12);
+              return (
+                <g key={`lab-${d.id}`} ref={regLabel(`d-${d.id}`, wx, wy)}>
+                  <text
+                    textAnchor="middle"
+                    fontSize="9.5"
+                    fontWeight="800"
+                    fill={d.color}
+                    fillOpacity="0.9"
+                    stroke="#000"
+                    strokeWidth="2.5"
+                    paintOrder="stroke"
+                  >
+                    🔒 {d.name[L]}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        </svg>
       </div>
 
-      {state.top && state.top.length > 0 && (
-        <div className="grid-panel mx-3 mt-4 p-4">
-          <p className="text-[11px] font-bold tracking-[0.2em] text-cyan-300">{t.top}</p>
-          <ol className="mt-2 space-y-1">
-            {state.top.map((h, i) => (
-              <li key={h.gamer_name} className="flex justify-between text-sm">
-                <span className="text-neutral-200">
-                  {i + 1}. {h.gamer_name}
-                </span>
-                <span className="tabular-nums text-cyan-300">{h.total} BB</span>
-              </li>
-            ))}
-          </ol>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%)" }}
+      />
+
+      <Hud
+        t={t}
+        bb={bb}
+        townPct={townPct}
+        townLevel={townLevel}
+        hunters={state?.hunters ?? 0}
+        invested={invested}
+        onBack={goBack}
+      />
+
+      <SideButtons
+        t={t}
+        sound={sound}
+        onZoomIn={() => zoomBy(1.35)}
+        onZoomOut={() => zoomBy(1 / 1.35)}
+        onHome={goHome}
+        onSound={toggleSound}
+        onInfo={() => select({ type: "info", id: "info" })}
+      />
+
+      {banner && (
+        <div
+          key={banner.id}
+          className="gx-banner gx-panel pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap px-5 py-3 text-center"
+          style={{ top: "calc(max(env(safe-area-inset-top), 8px) + 96px)", borderColor: "#facc15", boxShadow: "0 0 30px rgba(250,204,21,.45)" }}
+        >
+          <p className="text-sm font-black text-yellow-200">{banner.icon} {banner.text}</p>
         </div>
       )}
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col">
+        <Sheet
+          key={selected ? `${selected.type}-${selected.id}` : "none"}
+          t={t}
+          L={L}
+          mode={sheetMode}
+          project={pickedProject}
+          district={pickedDistrict}
+          status={pickedProject ? statusOf(pickedProject) : "queued"}
+          pct={pickedProject ? percentOf(pickedProject) : 0}
+          bb={bb}
+          amount={amount}
+          setAmount={setAmount}
+          maxSpend={maxSpend}
+          spendAmount={spendAmount}
+          busy={busy}
+          msg={msg}
+          backers={backers}
+          top={state?.top}
+          onSpend={spend}
+          onClose={() => setSelected(null)}
+        />
+        <Carousel cards={cards} selectedId={selected?.id} onPick={select} refs={cardRefs} t={t} />
+      </div>
     </div>
   );
 }
